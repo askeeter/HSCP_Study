@@ -1,0 +1,458 @@
+* Venkatesh Thesis Notes
+** Standard Model
+   [[~/Dropbox/Research/Adams_LabBook/Figures/StandardModel.png]]
+   + Hadrons
+     + Mesons :: Quark and Anti-Quark $q\bar{q}$
+     + Baryons :: All Quarks or All Anti-Quarks $qqq/\bar{q}\bar{q}\bar{q}$
+                  
+** Standard Model Shortcomings
+   + Matter-Antimatter Asymmetry
+   + Accelerating Expansion of Universe :: Dark Energy?
+   + Constant Angular Velocity of Spiral Galaxies :: Dark Matter?
+   + Hierarchy Problem :: Gravitational force so much weaker than others
+   + Grand Unification :: Possible inability to distinguish between
+        fundamental forces at high enough energy scales
+
+** Beyond SM Theories
+   Conserved or almost conserved quantum numbers can result in stable
+   or long-lived particles called *Heavy Stable Charged Particles
+   (HSCP)*.
+   
+*** Heavy Stable Charged Particles
+    + Fractional ($|Q|<e$)
+    + Unit ($|Q|=e$)
+    + Multiple ($|Q|>e$)
+       
+*** Q Balls
+    Could have been formed during the early universe through phase
+    transitions and fusion, or by aggregation of net charge in a
+    region through statistical fluctuations.
+
+** Search for Multiply Charged HSCPs in High Energy Colliders
+   + *Massive* = $m>100 GeV$
+   + Unstable, but long enough lifetime to be detected
+   + Need $\approx 5ns$ to traverse detector
+   + Interact primarily electromagnetically
+   + Enhanced ionization energy loss due to larger $Q$ for
+     nonrelativistic MCHSCPs
+   + *Bethe-Bloche Formula* :: Describes average electromagnetic
+        energy loss per unit pathlength of a charged particle
+        traversing a medium.
+        $-\left<\frac{dE}{dx}\right>=4\pi
+        N_{A}r_{e}^2m_{e}c^2z^2\frac{Z}{A}\frac{1}{\beta^2}\left[\frac{1}{2}\ln\frac{2m_ec^2\beta^2\gamma^2T_{max}}{I^2}-\beta^2-\frac{\delta(\beta\gamma)}{2}\right]\times
+        Q^2$
+     + $N_A$ :: Avogadros Number
+     + $m_e$ :: Electron Mass
+     + $r_e$ :: Classical Electron Radius
+     + $z$ :: Electrical charge of the particle in units of $e$
+     + $\beta$ :: $\frac{\nu}{c}$
+     + $\gamma$/Lorentz Factor :: $\frac{1}{\sqrt{1-\beta^2}}$
+     + $Z$ :: Atomic Number of the Absorber
+     + $A$ :: Mass Number of the Absorber
+     + $T_{max}$ :: Maximum kinetic energy that can be imparted to a
+                    free electron in a single collision
+     + $I$ :: Mean excitation potential
+     + $\delta(\beta\gamma)$ :: Density effect correction to
+          ionization energy loss
+     + $Q$ :: Electric charge of the particle
+     + Graphical Representation :: [[~/Dropbox/Research/Adams_LabBook/Figures/Bethe-Bloch.png]]
+     + Qualitative Trends 
+       + Minimum energy loss when particle speed is *relativistic*
+         ($\beta\gamma\approx 2$)
+       + After the above, roughly constant energy loss until radiative
+         effects become prominent.
+       + $0.1<\beta\gamma<2$ Energy loss increases with a
+         $\approx\frac{1}{\beta^2}$ dependence.
+       + At much slower speeds ($\beta\gamma <\approx 0.1$) other
+         effects must be considered.
+       + Overall $Q^2$ dependence for stopping power
+     + MHSCP/HSCP Signatures
+       + Large energy loss from low velocity and higher charge
+       + Often non-relativistic = Higher ionization energy loss
+         compared to Standard Model Particles.
+       + Even MHSCP at relativistic will have energy loss $Q^2$ times
+         higher than SM
+     + Issued with detection
+       + Slow moving particles can continue to travel through the
+         detector for longer time periods than regular SM. So, trigger
+         requirements might be missed, and the event rejected.
+       + Slow moving particles can trigger during subsequent events
+         and thus be incorrectly reconstructed if at all.
+       + Must have lower $\beta$ limit where we can expect proper reconstruction.
+       
+      
+               
+** The LHC and the CMS
+   Experiments in particle physics involve the collisions of two or
+   more particles at extremely high energies. The particles are
+   brought up to these high energies by accelerators, then forced to
+   collide at interaction points surrounded by detectors capable of
+   recording and analyzing the event. The obtained information is used
+   to infer the particle constituents of a collision/event.
+*** The Large Hadron Collider
+    + Proton-Proton collider
+    + $\approx 10^9$ proton-proton interactions per second
+    + $\approx 27$ km in circumference
+    + Steps
+      1. Electric field applied to H gas separates protons and electrons.
+      2. Protons sent to Linac 2, accelerated to 50 MeV.
+      3. Proton Synchotron Booster (PSB) to 1.4 GeV.
+      4. Proton Synchotron (PS) to 25 GeV.
+      5. Super Proton Synchotron (SPS) to 450 GeV.
+      6. Grouped into bunches during all accelerations.
+         + Numinal bunch number is 2802
+         + Nominal proton number in each bunch is $\approx10^{11}$
+         + Nominal bunch spacing between successives is 25 ns.
+      7. Protons channeled into the two beam pipes of the LHC,
+         circulated in opposite directions.
+      8. LHC accelerates them to the desired energy.
+*** The Compact Muon Solenoid
+**** Coordinate System
+     + Origin located at the nominal collision point.
+     + x-axis points radially inward towards the LHC center.
+     + y-axis points vertically upwards.
+     + z-axis points along the beam direction per the right-hand rule.
+     + Polar angle $\theta$ measured from z-axis. Between y-axis and z-axis.
+     + Azimuthal angle $\phi$ measured from the x-axis. In the x-y
+       (transverse) plane.
+     + Pseudorapidity $\eta = -\ln\tan\left(\frac{\theta}{2}\right)$
+       is a Lorentz invariant angular measure. Higher $\eta$, lower
+       $\theta$.
+     + Transverse Momentum, $p_t$, is the momentum component in the
+       transverse plane.
+     + Transverse Energy, $E_t = E\sin(\theta)$, is the energy
+       component in the transverse plane.
+     + The vector momentum imbalance in the transverse plane is known
+       as the Missing Transverse Momentum, $\vec{E}_T^{miss}$.
+     + The magnitude of the Missing Transverse Momentum is known as
+       the Missing Transverse Energy, $E_T^{miss}$.
+       
+**** Detector Layout
+     SEE LAYOUT SECTION FROM VENKATESH THESIS
+
+**** Inner Tracking System
+
+
+* HSCP Analyais
+** File Generation
+*** Useful Twikis
+  + https://twiki.cern.ch/twiki/bin/viewauth/CMS/Hscp2014Analysis#Instructions_to_produce_HSCP_sam
+  + https://twiki.cern.ch/twiki/bin/view/Main/BatchJobs
+  + https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCmsDriver
+*** AOD Files
+    AOD files include all of the information from the simulation. That
+    is, everything from the detector is included. We do not need all
+    of this information, and it will get stripped down later. An
+    example command to create configuration files for the creation of
+    the AOD files is as follows:
+    #+BEGIN_SRC sh
+      cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_1400_TuneZ2star_13TeV_pythia6_cff.py --fileout file:mchamp6_M_1400_AOD.root --mc --eventcontent AODSIM --datatier GEN-SIM-DIGI-AOD --conditions MCRUN2_74_V8 --step GEN,SIM,DIGI,L1,DIGI2RAW,HLT:GRun,RAW2DIGI,L1Reco,RECO --python_filename mchamp6_M_1400__cfg.py --magField 38T_PostLS1 --geometry Extended2015 --customise SimG4Core/CustomPhysics/Exotica_HSCP_SIM_cfi.customise,SLHCUpgradeSimulations/Configuration/postLS1Customs.customisePostLS1 --no_exec -n 10
+    #+END_SRC
+
+    The directory that contains the list of PYTHIA information for the
+    various available particles is:
+    =/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/Configuration/GenProduction/python/ThirteenTeV/=
+    The list of available files is:
+    #+tblname: AvailablePythiaInfoTable
+| Filename                                                                                          |
+|---------------------------------------------------------------------------------------------------|
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp12_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp12_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp15_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp15_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp18_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp18_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp1_M_300_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp1_M_900_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp24_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp24_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp2_M_300_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp2_M_900_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp30_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp30_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp36_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp36_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_1000_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_100_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_1400_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_1800_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_200_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_2200_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_2600_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_300_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_400_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_600_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_800_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp3_M_900_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp48_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp48_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp60_M_300_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp60_M_900_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_1000_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_100_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_1400_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_1800_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_200_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_2200_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_2600_TuneZ2star_13TeV_pythia6_cff.py |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_300_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_400_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_600_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_800_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_900_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp9_M_300_TuneZ2star_13TeV_pythia6_cff.py  |
+| Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp9_M_900_TuneZ2star_13TeV_pythia6_cff.py  |
+|---------------------------------------------------------------------------------------------------|
+
+    Now, once the appropriate configuration files are created, they
+    need to be sent to the CERN Batch service to run. The above
+    cmsDriver command includes all steps including the full
+    simulation. To send files to the batch service, a script must be
+    used. An example script is as follows:
+    #+BEGIN_SRC sh
+      #! /bin/sh
+      CMSSW_PROJECT_SRC="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/"
+      CFG_FILE="mchamp6_M_1400_cfg.py"
+      OUTPUT_FILE="mchamp6_M_1400.root"
+      TOP="$PWD"
+
+      cd $CMSSW_PROJECT_SRC
+      eval `scramv1 runtime -sh`
+      cd $TOP
+      cmsRun $CMSSW_PROJECT_SRC/$CFG_FILE
+      rfcp $OUTPUT_FILE $CMSSW_PROJECT_SRC$OUTPUT_FILE
+    #+END_SRC
+
+    After the script is created though, make sure to change the file
+    permissions with:
+    #+BEGIN_SRC sh
+      chmod 744 lxplusbatchscript.sh
+    #+END_SRC
+    
+    Now the job(s) must be submitted to the batch service:
+    #+BEGIN_SRC sh
+      bsub -R "pool>30000" -q 1nw -J job1 < lxplusbatchscript.csh
+    #+END_SRC
+    Where the following options are true: 
+    - "-R" "pool>30000" means that you want a minimum free space of 30GB
+    to run your job. 
+    - "-q" 1nw means you are submitting to the 1-week que. Other available
+    queues are:
+     - 8nm (8 minutes)
+     - 1nh (1 hour)
+     - 8nh
+     - 1nd (1 day)
+     - 2nd (2 days)
+     - 1nw (1 week)
+     - 2nw
+     - -J job1 sets job1 as your job name
+     - < lxplusbatchscript.sh gives your script to the job.
+    
+  Check your job status with: "bjobs"
+  Kill jobs with "bkill -J job1"
+  Using bkill without any job specified will kill ALL of your jobs.
+  
+*** EDM Files
+    Once the creation of the AOD files is complete, they need to be
+    converted into something that is a bit smaller, containing only
+    the information that we need. Basically, this process involves
+    cutting out some of the "meat" of the AOD files, reducing their
+    size, but certainly not their usefulness.
+    
+    A single file needs to be modified that dictates to cmsRun which
+    AOD file that you would like to convert to EDM. The file resembles
+    the following:
+    #+BEGIN_SRC python
+      import sys, os
+      import FWCore.ParameterSet.Config as cms
+      #Makes EDM from AOD
+      isSignal = True
+      isBckg = False
+      isData = False
+      isSkimmedSample = False
+      GTAG = 'MCRUN2_74_V8'
+      OUTPUTFILE = '/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_EDM.root'
+
+      #InputFileList = cms.untracked.vstring()
+
+      #debug input files 
+      #this list is overwritten by CRAB
+      InputFileList = cms.untracked.vstring(
+          #The comment is an example of how to do this from a remote directory
+          #'root://cmseos.fnal.gov//eos/uscms/store/user/aackert/HSCP/AODgen/condorjdls/step2_condortest.root',
+          #Below is the file that you want to conver from AOD to EDM
+          'file:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_AOD.root'
+      )
+
+
+      #main EDM tuple cfg that depends on the above parameters
+      execfile( os.path.expandvars('${CMSSW_BASE}/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_cfg.py') )
+    #+END_SRC
+
+    This file is located at:
+    =/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_Signal_cfg.py=
+
+    The lines that need to be altered here are "OUTPUTFILE", and
+    'file:/afs/cern/ch/...' which are basically telling the program
+    the name of the EDM file that you would like created when the
+    cmsRun has been ran, and the name of the input file(s). If you
+    have had to split up a job into multiple smaller files (that is,
+    you have split up a large AOD into several smaller ones), simply
+    include the names of each of those files in the "InputFileList",
+    separated by commas and endlines. It is simply a python array.
+
+    Once this file has been altered, the conversion is accomplished
+    simply by running the following:
+    #+BEGIN_SRC sh
+      cmsRun HSCParticleProducer_Signal_cfg.py
+    #+END_SRC
+    
+    These jobs can also be sent to the batch service if you would
+    like, however scripts would still need to be created just as with
+    the AOD files.
+
+*** Usable NTuples
+    Once we have EDM files, we are ready to create usable ROOT files
+    that we can perform analysis on. In order to do so, we have to
+    call on the Launch.py program located in:
+    =/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Launch.py=
+    
+    Before calling this though, we must tell Launch which files that
+    we would like to act on. This is accomplished by editing the
+    "Analysis_Samples.txt" file which is located in the same directory
+    as Launch. An example of this file is as follows:
+
+    #+BEGIN_EXAMPLE
+    #RELEASE, SAMPLE TYPE (0=data, 1=bckg, 2=signal, 3=signal systematic), SIGNAL NAME, INPUT FILE NAME, Legend Entry, PILEUP Distribution, Signal Mass, Sample Cross-section, PLOTTING FLAG (0=false, 1=true), Weight for events with 0, 1 and 2 charged HSCP in the event
+    #HSCP Signal
+    #"CMSSW_7_4",  2, "MChamp9_13TeV_M900"                , "MChamp9_13TeV_M900"            , "MC: mchamp9 900 GeV/#font[12]{c}^{2}"                     , "S10"   ,    900, +2.5000000000E-03, 1, 1.000, 1.000, 1.000
+    #
+    #"CMSSW_7_4",  2, "MChamp6_13TeV_M900"                , "MChamp6_13TeV_M900"            , "MC: mchamp6 900 GeV/#font[12]{c}^{2}"                     , "S10"   ,    900, +2.5000000000E-03, 1, 1.000, 1.000, 1.000
+    "CMSSW_7_4",   2, "mchamp18_M_300"                    , "mchamp18_M_300_EDM"            , "MC: mchamp6 900 Gev/#font[12]{c}^{2}"                     , "S10"   ,    300, +2.5000000000E-03, 1, 1.000, 1.000, 1.000
+
+
+    #
+    #
+    #
+    #Background
+    #"CMSSW_7_4", 1, "MC_13TeV_DYToMuMu"                  , "MC_13TeV_DYToMuMu"                     , "MC: DYToMuMu"                            , "S10"   ,      0, +1.3389000000E+03, 0, 0.000, 0.000, 0.000
+    #+END_EXAMPLE
+
+    There are several potential things that could be edited in this
+    file, but we mainl only need to edit three. The first column
+    corresponds to the version of CMSSW being used. The second
+    corresponds to the sample type being read in, where keys and
+    meanings are displayed at the top of the file. The third column is
+    the desired name of the output data file once conversion is
+    complete. The fourth column corresponds to the name of the input
+    EDM file, with no ".root" extension. The next column is a label
+    to be used in plots produced by steps two and higher. The next
+    column "s10" does not need to be changed.This is the type of
+    pileup distribution. The next column must be changed to equal the
+    mass of the desired particle in GeV/c^2. None of the other numbers
+    need to be changed. It is of course possible to process multiple
+    files in this step. 
+
+    In order to produce usable tuples, we must simply run step
+    one. Step one converts our EDM files to a usable root file. 
+    Now that the above file has been properly edited, we simply run:
+    #+BEGIN_SRC sh
+      Launch.py 1
+    #+END_SRC
+    Which will run step 1 of the analysis code. Upon completion, the
+    data root tuples will be stored in the "Results" folder of the
+    same directory as Launch. It should be noted that the jobs are
+    auto-batched to Cern's 2 day queue. 
+
+    Once can also run the jobs locally by looking in the "FARM/inputs"
+    folder. You will see ####_HscpAnalysis.sh where the numbers
+    correspond to the batched job number. Less them and the bottom
+    lines will tell you what samples they are running on if you're not
+    sure. Then just do:
+    #+BEGIN_SRC sh
+      source filename.sh >& output.txt &
+    #+END_SRC
+    To run locally (and redirect the output). Running locally is
+    usually faster than sending to batch, but if the local running
+    takes longer than two hours, the job will be killed automatically.
+    
+*** Plots
+    Step 2 of the analysis code involves generating plots. In order to
+    run this step, you must simply use the number "2" with Launch.py,
+    similar to the previous step. However, you must make sure to edit
+    the file "Analysis_Global.h" located in the Launch.py directory,
+    around line 157. Make sure that the "BaseDirectory" points to
+    where your samples being analyzed are located. Then, you can
+    simply run step 2 AFTER step 1.
+
+
+* Playing around with org examples
+  #+begin_src python :results file
+    import matplotlib, numpy
+    #matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    fig=plt.figure(figsize=(4,2))
+    x=numpy.linspace(-15,15)
+    plt.plot(numpy.sin(x)/x)
+    fig.tight_layout()
+    plt.savefig('/tmp/python-matplot-fig.png')
+    return '/tmp/python-matplot-fig.png' # return filename to org-mode
+#+end_src
+
+  #+RESULTS:
+  [[file:/tmp/python-matplot-fig.png]]
+
+  #+BEGIN_SRC cpp
+    #include <iostream>
+    using namespace std;
+    int main(void){
+      cout << "Hello world!" << endl;
+      }
+  #+END_SRC
+
+  #+RESULTS:
+  : Hello world!
+ 
+  $-\left<\frac{dE}{dx}\right>=4\pi
+        N_{A}r_{e}^2m_{e}c^2z^2\frac{Z}{A}\frac{1}{\beta^2}\left[\frac{1}{2}\ln\frac{2m_ec^2\beta^2\gamma^2T_{max}}{I^2}-\beta^2-\frac{\delta(\beta\gamma)}{2}\right]\times
+        Q^2$
+
+
+
+  
+* Code Snippets
+** Bash script populate array of all files
+   To populate an array of all of the files in a certain folder you
+   can do something similar to:
+   #+BEGIN_SRC sh
+     shopt -s nullglob
+     filearray=( "HSCP_MC_sh_Files"/* )
+     shopt -u nullglob
+     #Now to loop through them
+     for file in "${filearray[@]}"
+     do
+         #strip off the characters that we don't need
+         fileFixed=${file:17}
+     done
+   #+END_SRC
+   This is what I use in my script that sends jobs to the cern batch
+   service, as well as my script that creates the batch shell files
+   based on the available configuration files.
+** Bash script extract numbers from filename
+   Similar to the above, we must first obtain a file name that we wish
+   to parse. So:
+   #+BEGIN_SRC sh
+     shopt -s nullglob
+     filearray=( "HSCP_MC_cfg_Files"/* )
+     shopt -u nullglob
+     #Now to loop through them
+     for file in "${filearray[@]}"
+     do
+         parts=(${file//_/ })
+         charge=${parts[3]}
+         #extract the number from the charge
+         chargeFixed=$(echo $charge | tr -dc '0-9')
+         mass=${parts[5]}
+         #Now we have our relevant info from the file!
+     done
+   #+END_SRC
