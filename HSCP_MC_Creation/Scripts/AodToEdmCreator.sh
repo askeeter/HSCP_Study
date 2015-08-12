@@ -1,12 +1,10 @@
 #!/bin/bash
 
-#Populate an array of all of the configuration files
+#Populate an array of all of the AOD files
 shopt -s nullglob
 filearray=( "HSCP_MC_Root_Files"/*AOD* )
 shopt -u nullglob
-#printf "%s\n" "${filearray[@]}"
 
-#Create a python file for each config file    
 for file in "${filearray[@]}"
 do
     parts=(${file//_/ })

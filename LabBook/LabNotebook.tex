@@ -1,0 +1,632 @@
+% Created 2015-08-12 Wed 19:50
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\tolerance=1000
+\author{Austin Vihncent Skeeters}
+\date{\today}
+\title{Heavy Stable Charged Particle Study}
+\hypersetup{
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs 24.4.1 (Org mode 8.2.10)}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{HSCP Analyais}
+\label{sec-1}
+\subsection{File Generation}
+\label{sec-1-1}
+\subsubsection{Useful Twikis}
+\label{sec-1-1-1}
+\begin{itemize}
+\item \url{https://twiki.cern.ch/twiki/bin/viewauth/CMS/Hscp2014Analysis#Instructions_to_produce_HSCP_sam}
+\item \url{https://twiki.cern.ch/twiki/bin/view/Main/BatchJobs}
+\item \url{https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCmsDriver}
+\end{itemize}
+\subsubsection{AOD Files}
+\label{sec-1-1-2}
+\begin{enumerate}
+\item Configuration File Creation
+\label{sec-1-1-2-1}
+
+\begin{enumerate}
+\item Available MC Particle Data
+\label{sec-1-1-2-1-1}
+The directory that contains the list of PYTHIA information for the
+various available particles is:
+\texttt{/afs/cern.ch/work/a/askeeter/private/CMSSW\_7\_4\_4\_patch4/src/Configuration/GenProduction/python/ThirteenTeV/}
+The list of available files is:
+\begin{center}
+\begin{tabular}{l}
+Filename\\
+\hline
+HSCPmchamp12$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp12$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp15$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp15$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp18$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp18$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp1$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp1$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp24$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp24$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp2$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp2$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp30$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp30$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp36$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp36$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{1000}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{100}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{1400}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{1800}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{200}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{2200}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{2600}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{400}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{600}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{800}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp3$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp48$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp48$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp60$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp60$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{1000}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{100}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{1400}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{1800}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{200}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{2200}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{2600}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{400}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{600}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{800}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp6$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp9$_{\text{M}}$$_{\text{300}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+HSCPmchamp9$_{\text{M}}$$_{\text{900}}$$_{\text{TuneZ2star}}$$_{\text{13TeV}}$$_{\text{pythia6}}$$_{\text{cff}}$.py\\
+\hline
+\end{tabular}
+\end{center}
+
+\item Creating by Hand
+\label{sec-1-1-2-1-2}
+
+AOD files include all of the information from the simulation. That
+is, everything from the detector is included. We do not need all
+of this information, and it will get stripped down later. An
+example command to create configuration files for the creation of
+the AOD files is as follows:
+
+\begin{verbatim}
+cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_1400_TuneZ2star_13TeV_pythia6_cff.py --fileout file:mchamp6_M_1400_AOD.root --mc --eventcontent AODSIM --datatier GEN-SIM-DIGI-AOD --conditions MCRUN2_74_V8 --step GEN,SIM,DIGI,L1,DIGI2RAW,HLT:GRun,RAW2DIGI,L1Reco,RECO --python_filename mchamp6_M_1400__cfg.py --magField 38T_PostLS1 --geometry Extended2015 --customise SimG4Core/CustomPhysics/Exotica_HSCP_SIM_cfi.customise,SLHCUpgradeSimulations/Configuration/postLS1Customs.customisePostLS1 --no_exec -n 10
+\end{verbatim}
+\item Creating by Automation
+\label{sec-1-1-2-1-3}
+
+Automation of the above has been accomplished by means of a
+bash script. This script will create the corresponding
+configuration file for the given charge, mass and event number as
+specified in the appropriate org code snippet variables available
+below in the runner.
+\begin{verbatim}
+#!/bin/bash
+CHARGE=$1
+MASS=$2
+EVENTS=$3
+cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp${CHARGE}_M_${MASS}_TuneZ2star_13TeV_pythia6_cff.py --fileout file:mchamp${CHARGE}_M_${MASS}_AOD.root --mc --eventcontent AODSIM --datatier GEN-SIM-DIGI-AOD --conditions MCRUN2_74_V8 --step GEN,SIM,DIGI,L1,DIGI2RAW,HLT:GRun,RAW2DIGI,L1Reco,RECO --python_filename mchamp${CHARGE}_M_${MASS}_cfg.py --magField 38T_PostLS1 --geometry Extended2015 --customise SimG4Core/CustomPhysics/Exotica_HSCP_SIM_cfi.customise,SLHCUpgradeSimulations/Configuration/postLS1Customs.customisePostLS1 --no_exec -n ${EVENTS}
+\end{verbatim}
+
+The above can be run in the appropriate directory by executing the
+following within the Org file:
+\begin{verbatim}
+sh cfgCreator.sh ${charge} ${mass} ${events}
+\end{verbatim}
+\end{enumerate}
+\item Running Configuration Files
+\label{sec-1-1-2-2}
+
+Once all of these steps, whether by hand or by automation have
+been completed, the user should be left with all of the
+requested AOD Root files, as well as the left over configuration
+files for everything that has been ran.
+\begin{enumerate}
+\item Running by Hand
+\label{sec-1-1-2-2-1}
+
+Now, once the appropriate configuration files are created, they
+need to be sent to the CERN Batch service to run. The above
+cmsDriver command includes all steps including the full
+simulation. To send files to the batch service, a script must be
+used. An example script is as follows:
+
+\begin{verbatim}
+#! /bin/sh
+CMSSW_PROJECT_SRC="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/"
+CFG_FILE="mchamp6_M_1400_cfg.py"
+OUTPUT_FILE="mchamp6_M_1400.root"
+TOP="$PWD"
+
+cd $CMSSW_PROJECT_SRC
+eval `scramv1 runtime -sh`
+cd $TOP
+cmsRun $CMSSW_PROJECT_SRC/$CFG_FILE
+rfcp $OUTPUT_FILE $CMSSW_PROJECT_SRC$OUTPUT_FILE
+\end{verbatim}
+
+After the script is created though, make sure to change the file
+permissions with:
+\begin{verbatim}
+chmod 744 lxplusbatchscript.sh
+\end{verbatim}
+
+Now the job(s) must be submitted to the batch service:
+\begin{verbatim}
+bsub -R "pool>30000" -q 1nw -J job1 < lxplusbatchscript.csh
+\end{verbatim}
+Where the following options are true: 
+\begin{itemize}
+\item "-R" "pool>30000" means that you want a minimum free space of 30GB
+\end{itemize}
+to run your job. 
+\begin{itemize}
+\item "-q" 1nw means you are submitting to the 1-week que. Other available
+\end{itemize}
+queues are:
+\begin{itemize}
+\item 8nm (8 minutes)
+\item 1nh (1 hour)
+\item 8nh
+\item 1nd (1 day)
+\item 2nd (2 days)
+\item 1nw (1 week)
+\item 2nw
+\item -J job1 sets job1 as your job name
+\item < lxplusbatchscript.sh gives your script to the job.
+\end{itemize}
+
+Check your job status with: "bjobs"
+Kill jobs with "bkill -J job1"
+Using bkill without any job specified will kill ALL of your jobs.
+
+\item Running by Automation
+\label{sec-1-1-2-2-2}
+
+All of the aforemntioned can be accomplished automatically by
+means of the following scripts:
+
+\begin{verbatim}
+#!/bin/bash
+
+#Populate an array of all of the configuration files
+shopt -s nullglob
+filearray=( "HSCP_MC_cfg_Files"/* )
+shopt -u nullglob
+
+#Create a bash file for each config file
+for file in "${filearray[@]}"
+do
+    parts=(${file//_/ })
+    charge=${parts[3]}
+    #Extract the number from the charge
+    chargeFixed=$(echo $charge | tr -dc '0-9')
+    mass=${parts[5]}
+
+    #All of the important data has been stripped from the config filename
+    #Now to create the bath scripts
+    filename="mchamp${chargeFixed}_M_${mass}.sh"
+    cfgfile="mchamp${chargeFixed}_M_${mass}_cfg.py"
+    rootfile="mchamp${chargeFixed}_M_${mass}_AOD.root"
+    #Create an empty file to be filled
+    touch $filename
+    #Use echo to populate the file contents. Not the cleanest way, but it works for a file this short.
+    echo "#!/bin/sh">$filename
+    echo 'CMSSW_PROJECT_SRC="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/"'>>$filename
+    echo """CFG_FILE='/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_cfg_Files/${cfgfile}'""">>$filename
+    echo """OUTPUT_FILE='/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/$rootfile'""">>$filename
+    echo "OUT_FILE='$rootfile'">>$filename
+    echo 'TOP="$PWD"'>>$filename
+    echo 'cd $CMSSW_PROJECT_SRC'>>$filename
+    echo 'eval `scramv1 runtime -sh`'>>$filename
+    echo 'cd $TOP'>>$filename
+    echo 'cmsRun $CFG_FILE'>>$filename
+    echo 'rfcp $OUT_FILE $OUTPUT_FILE'>>$filename
+    #DO NOT FORGET to change the config file permissions if you are creating these by hand.
+    chmod 744 $filename
+done
+\end{verbatim}
+
+The above places all created files in certain directories that
+are expected to remain constant. Should these change, all of the
+automation scripts will need to be updated, although the "by
+hand" methods will remain independent.
+
+After running the batch-creator script, we will have all of the
+necessary batch files that we need to run in order to utilize
+the appropriate configuration file to produce a corresponding
+AOD Root file.
+
+\begin{verbatim}
+#!/bin/bash
+
+#Populate an array of all of the batch scripts 
+shopt -s nullglob
+filearray=( "HSCP_MC_sh_Files"/* )
+shopt -u nullglob
+
+for file in "${filearray[@]}"
+do
+    #Strip off the chracters that we dont need
+    fileFixed=${file:17}
+    #Send to the two day queue. This can be changed
+    bsub -R "pool>20000" -q 2nd -J $fileFixed < /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_sh_Files/$fileFixed
+done
+\end{verbatim}
+\end{enumerate}
+\end{enumerate}
+
+\subsubsection{EDM Files}
+\label{sec-1-1-3}
+\begin{enumerate}
+\item Creation by Hand
+\label{sec-1-1-3-1}
+
+Once the creation of the AOD files is complete, they need to be
+converted into something that is a bit smaller, containing only
+the information that we need. Basically, this process involves
+cutting out some of the "meat" of the AOD files, reducing their
+size, but not (at least for our purposes) their utility.
+
+A single file needs to be modified that dictates to cmsRun which
+AOD file that you would like to convert to EDM. The file resembles
+the following:
+
+\begin{verbatim}
+import sys, os
+import FWCore.ParameterSet.Config as cms
+#Makes EDM from AOD
+isSignal = True
+isBckg = False
+isData = False
+isSkimmedSample = False
+GTAG = 'MCRUN2_74_V8'
+OUTPUTFILE = '/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_EDM.root'
+
+#InputFileList = cms.untracked.vstring()
+
+#debug input files 
+#this list is overwritten by CRAB
+InputFileList = cms.untracked.vstring(
+    #The comment is an example of how to do this from a remote directory
+    #'root://cmseos.fnal.gov//eos/uscms/store/user/aackert/HSCP/AODgen/condorjdls/step2_condortest.root',
+    #Below is the file that you want to conver from AOD to EDM
+    'file:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_AOD.root'
+)
+
+
+#main EDM tuple cfg that depends on the above parameters
+execfile( os.path.expandvars('${CMSSW_BASE}/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_cfg.py') )
+\end{verbatim}
+
+This file is located at:
+\texttt{/afs/cern.ch/work/a/askeeter/private/CMSSW\_7\_4\_4\_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer\_Signal\_cfg.py}
+
+The lines that need to be altered here are "OUTPUTFILE", and
+'file:/afs/cern/ch/\ldots{}' which are basically telling the program
+the name of the EDM file that you would like created when the
+cmsRun has been ran, and the name of the input file(s). If you
+have had to split up a job into multiple smaller files (that is,
+you have split up a large AOD into several smaller ones), simply
+include the names of each of those files in the "InputFileList",
+separated by commas and endlines. It is simply a python array.
+
+Once this file has been altered, the conversion is accomplished
+simply by running the following:
+
+\begin{verbatim}
+cmsRun HSCParticleProducer_Signal_cfg.py
+\end{verbatim}
+
+These jobs can also be sent to the batch service if you would
+like, however scripts would still need to be created just as with
+the AOD files.
+
+\item Creation by Automation
+\label{sec-1-1-3-2}
+
+All of the aforementioned can be accomplished by means of two
+automation scripts. One script, as with the batchCreator script,
+is only responsible for the creation of the Python configuration
+file dictating the terms of the AOD to EDM conversion. The other,
+as is similar again, is responsible for executing the conversion
+jobs.
+
+\begin{verbatim}
+#!/bin/bash
+
+#Populate an array of all of the AOD files
+shopt -s nullglob
+filearray=( "HSCP_MC_Root_Files"/*AOD* )
+shopt -u nullglob
+
+for file in "${filearray[@]}"
+do
+    parts=(${file//_/ })
+    charge=${parts[3]}
+    #Extract the number from the charge
+    chargeFixed=$(echo $charge | tr -dc '0-9')
+    mass=${parts[5]}    
+    aod_file="mchamp${chargeFixed}_M_${mass}_AOD.root"
+    root_file="mchamp${chargeFixed}_M_${mass}_EDM.root"
+    python_file="mchamp${chargeFixed}_M_${mass}_cfg.py"
+
+    cat > /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_AODtoEDM_Python_Files/${python_file} << EOF
+import sys, os
+import FWCore.ParameterSet.Config as cms
+#Makes EDM from AOD
+isSignal = True
+isBckg = False
+isData = False
+isSkimmedSample = False
+GTAG = 'MCRUN2_74_V8'
+OUTPUTFILE = '/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/${root_file}'
+
+InputFileList = cms.untracked.vstring(
+'file:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/${aod_file}'
+)
+
+execfile( '${CMSSW_BASE}/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_cfg.py' )
+EOF
+
+done
+\end{verbatim}
+
+\begin{verbatim}
+#!/bin/bash
+
+shopt -s nullglob
+filearray=( "HSCP_MC_Root_Files"/*AOD* )
+shopt -u nullglob
+
+for file in "${filearray[@]}"
+do
+    parts=(${file//_/ })
+    charge=${parts[3]}
+    #Extract the number from the charge
+    chargeFixed=$(echo $charge | tr -dc '0-9')
+    mass=${parts[5]}    
+    aod_file="mchamp${chargeFixed}_M_${mass}_AOD.root"
+    root_file="mchamp${chargeFixed}_M_${mass}_EDM.root"
+    python_file="mchamp${chargeFixed}_M_${mass}_cfg.py"
+
+    #Replace the standard configuration file with the one currently being ran
+    cp /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_AODtoEDM_Python_Files/${python_file} /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_Signal_cfg.py
+    cd /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/
+    cmsRun HSCParticleProducer_Signal_cfg.py
+    #Don't do the next file until the previous one has ran to completion, as these jobs are not sent to batch
+    wait
+done
+\end{verbatim}
+\end{enumerate}
+\subsubsection{Usable NTuples}
+\label{sec-1-1-4}
+\begin{enumerate}
+\item Creating by Hand
+\label{sec-1-1-4-1}
+
+Once we have EDM files, we are ready to create usable ROOT files
+that we can perform analysis on. In order to do so, we have to
+call on the Launch.py program located in:
+
+\texttt{/afs/cern.ch/work/a/askeeter/private/CMSSW\_7\_4\_4\_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Launch.py}
+
+Before calling this though, we must tell Launch which files that
+we would like to act on. This is accomplished by editing the
+"Analysis$_{\text{Samples}}$.txt" file which is located in the same directory
+as Launch. An example of this file is as follows:
+
+\begin{verbatim}
+#RELEASE, SAMPLE TYPE (0=data, 1=bckg, 2=signal, 3=signal systematic), SIGNAL NAME, INPUT FILE NAME, Legend Entry, PILEUP Distribution, Signal Mass, Sample Cross-section, PLOTTING FLAG (0=false, 1=true), Weight for events with 0, 1 and 2 charged HSCP in the event
+#HSCP Signal
+#"CMSSW_7_4",  2, "MChamp9_13TeV_M900"                , "MChamp9_13TeV_M900"            , "MC: mchamp9 900 GeV/#font[12]{c}^{2}"                     , "S10"   ,    900, +2.5000000000E-03, 1, 1.000, 1.000, 1.000
+#
+#"CMSSW_7_4",  2, "MChamp6_13TeV_M900"                , "MChamp6_13TeV_M900"            , "MC: mchamp6 900 GeV/#font[12]{c}^{2}"                     , "S10"   ,    900, +2.5000000000E-03, 1, 1.000, 1.000, 1.000
+"CMSSW_7_4",   2, "mchamp18_M_300"                    , "mchamp18_M_300_EDM"            , "MC: mchamp6 900 Gev/#font[12]{c}^{2}"                     , "S10"   ,    300, +2.5000000000E-03, 1, 1.000, 1.000, 1.000
+
+
+#
+#
+#
+#Background
+#"CMSSW_7_4", 1, "MC_13TeV_DYToMuMu"                  , "MC_13TeV_DYToMuMu"                     , "MC: DYToMuMu"                            , "S10"   ,      0, +1.3389000000E+03, 0, 0.000, 0.000, 0.000
+\end{verbatim}
+
+There are several potential things that could be edited in this
+file, but we mainl only need to edit three. The first column
+corresponds to the version of CMSSW being used. The second
+corresponds to the sample type being read in, where keys and
+meanings are displayed at the top of the file. The third column is
+the desired name of the output data file once conversion is
+complete. The fourth column corresponds to the name of the input
+EDM file, with no ".root" extension. The next column is a label
+to be used in plots produced by steps two and higher. The next
+column "s10" does not need to be changed.This is the type of
+pileup distribution. The next column must be changed to equal the
+mass of the desired particle in GeV/c$^{\text{2}}$. None of the other numbers
+need to be changed. It is of course possible to process multiple
+files in this step. 
+
+In order to produce usable tuples, we must simply run step
+one. Step one converts our EDM files to a usable root file. 
+Now that the above file has been properly edited, we simply run:
+
+\begin{verbatim}
+Launch.py 1
+\end{verbatim}
+
+Which will run step 1 of the analysis code. Upon completion, the
+data root tuples will be stored in the "Results" folder of the
+same directory as Launch. It should be noted that the jobs are
+auto-batched to Cern's 2 day queue. 
+
+Once can also run the jobs locally by looking in the "FARM/inputs"
+folder. You will see \#\#\#\#$_{\text{HscpAnalysis}}$.sh where the numbers
+correspond to the batched job number. Less them and the bottom
+lines will tell you what samples they are running on if you're not
+sure. Then just do:
+
+\begin{verbatim}
+source filename.sh >& output.txt &
+\end{verbatim}
+
+To run locally (and redirect the output). Running locally is
+usually faster than sending to batch, but if the local running
+takes longer than two hours, the job will be killed automatically.
+
+\item Creating by Automation
+\label{sec-1-1-4-2}
+
+The following script will simply populate the
+"AnalysisSamples$_{\text{Gloabal}}$.txt" file with all of the EDM files that
+are available for conversion. Careful with this program though,
+as it merely appends to the already existing file. It is best to
+delete the contents of the already existing file before running
+this in order to avoid the creation of duplicate files. 
+
+\begin{verbatim}
+#!/bin/bash
+
+shopt -s nullglob
+filearray=( "HSCP_MC_Root_Files"/*EDM* )
+shopt -u nullglob
+#printf "%s\n" "${filearray[@]}"
+appendTo="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Analysis_Samples.txt"
+#Create a python file for each config file    
+for file in "${filearray[@]}"
+do
+    parts=(${file//_/ })
+    charge=${parts[3]}
+    #Extract the number from the charge
+    chargeFixed=$(echo $charge | tr -dc '0-9')
+    mass=${parts[5]}    
+    aod_file="mchamp${chargeFixed}_M_${mass}_AOD.root"
+    edm_file="mchamp${chargeFixed}_M_${mass}_EDM"
+    gen_file="mchamp${chargeFixed}_M_${mass}"
+    #We need to append to the Analysis_Samples.txt file
+    cat >> /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Analysis_Samples.txt << EOF
+"CMSSW_7_4",   2, "$gen_file"    ,"$edm_file"    , "MC: mchamp${chargeFixed} ${mass} GeV/#font[12]{c}^{2}" , "S10", $mass, +9.8480000000E+01, 0, 1.000, 1.000, 1.000
+EOF
+done
+\end{verbatim}
+
+Once the list has been populated, the next step is the same as
+the above. Simply run:
+
+\begin{verbatim}
+Launch.py 1
+\end{verbatim}
+\end{enumerate}
+
+\subsubsection{Plots}
+\label{sec-1-1-5}
+
+Step 2 of the analysis code involves generating plots. In order to
+run this step, you must simply use the number "2" with Launch.py,
+similar to the previous step. However, you must make sure to edit
+the file "Analysis$_{\text{Global}}$.h" located in the Launch.py directory,
+around line 157. Make sure that the "BaseDirectory" points to
+where your samples being analyzed are located. Then, you can
+simply run step 2 AFTER step 1.
+
+
+\section{Playing around with org examples}
+\label{sec-2}
+
+\begin{verbatim}
+import matplotlib, numpy
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+fig=plt.figure(figsize=(4,2))
+x=numpy.linspace(-15,15)
+plt.plot(numpy.sin(x)/x)
+fig.tight_layout()
+plt.savefig('/tmp/python-matplot-fig.png')
+return '/tmp/python-matplot-fig.png' # return filename to org-mode
+\end{verbatim}
+
+\begin{verbatim}
+#include <iostream>
+using namespace std;
+int main(void){
+  cout << "Hello world!" << endl;
+  }
+\end{verbatim}
+
+$-\left<\frac{dE}{dx}\right>=4\pi
+        N_{A}r_{e}^2m_{e}c^2z^2\frac{Z}{A}\frac{1}{\beta^2}\left[\frac{1}{2}\ln\frac{2m_ec^2\beta^2\gamma^2T_{max}}{I^2}-\beta^2-\frac{\delta(\beta\gamma)}{2}\right]\times
+        Q^2$
+
+
+
+
+\section{Code Snippets}
+\label{sec-3}
+\subsection{Bash script populate array of all files}
+\label{sec-3-1}
+
+To populate an array of all of the files in a certain folder you
+can do something similar to:
+\begin{verbatim}
+shopt -s nullglob
+filearray=( "HSCP_MC_sh_Files"/* )
+shopt -u nullglob
+#Now to loop through them
+for file in "${filearray[@]}"
+do
+    #strip off the characters that we don't need
+    fileFixed=${file:17}
+done
+\end{verbatim}
+This is what I use in my script that sends jobs to the cern batch
+service, as well as my script that creates the batch shell files
+based on the available configuration files.
+\subsection{Bash script extract numbers from filename}
+\label{sec-3-2}
+
+Similar to the above, we must first obtain a file name that we wish
+to parse. So:
+\begin{verbatim}
+shopt -s nullglob
+filearray=( "HSCP_MC_cfg_Files"/* )
+shopt -u nullglob
+#Now to loop through them
+for file in "${filearray[@]}"
+do
+    parts=(${file//_/ })
+    charge=${parts[3]}
+    #extract the number from the charge
+    chargeFixed=$(echo $charge | tr -dc '0-9')
+    mass=${parts[5]}
+    #Now we have our relevant info from the file!
+done
+\end{verbatim}
+% Emacs 24.4.1 (Org mode 8.2.10)
+\end{document}
