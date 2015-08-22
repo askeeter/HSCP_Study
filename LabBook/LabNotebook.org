@@ -1,8 +1,15 @@
-#+TITLE:  Heavy Stable Charged Particle Study
 #+AUTHOR: Austin Vihncent Skeeters
 #+EMAIL:  avs11d@my.fsu.edu
 #+EXPORT_SELECT_TAGS: export
 #+EXPORT_EXCLUDE_TAGS: noexport
+#+LATEX_CLASS: book
+#+LaTeX_CLASS_OPTIONS: [listings, listings-color, listings-bw]
+#+LaTeX_CLASS_OPTIONS: [11 pt , letterpaper , twoside , openright]
+#+LATEX_HEADER: \usepackage[AUTO]{inputenc}
+#+LaTeX_HEADER: \lstset{tabsize=4,language=C++,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
+#+LaTeX_HEADER: \lstset{tabsize=4,language=Python,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
+#+LaTeX_HEADER: \lstset{tabsize=4,language=sh,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
+#+LaTeX_HEADER: \lstset{tabsize=4,language=bash,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 
 * Venkatesh Thesis Notes                                           :noexport:
 ** Standard Model
@@ -139,7 +146,7 @@
 **** Inner Tracking System
 
 
-* HSCP Analyais
+* HSCP Analysis                                                      :export:
 ** File Generation
 *** Useful Twikis
   - https://twiki.cern.ch/twiki/bin/viewauth/CMS/Hscp2014Analysis#Instructions_to_produce_HSCP_sam
@@ -151,7 +158,10 @@
 ***** Available MC Particle Data
       The directory that contains the list of PYTHIA information for the
       various available particles is:
-      =/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/Configuration/GenProduction/python/ThirteenTeV/=
+      #+BEGIN_SRC sh
+/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/Configuration/GenProduction/python/ThirteenTeV/
+      #+END_SRC
+      
       The list of available files is:
     #+tblname: AvailablePythiaInfoTable
 | Filename                                           |
@@ -628,9 +638,9 @@
 
      #+NAME: launch-Step-1
      #+BEGIN_SRC sh :exports code :dir /ssh:askeeter@lxplus.cern.ch:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/
-      Launch.py 1
+Launch.py 1
      #+END_SRC
-
+     
 *** Plots
 
     Step 2 of the analysis code involves generating plots. In order to
@@ -640,9 +650,110 @@
     around line 157. Make sure that the "BaseDirectory" points to
     where your samples being analyzed are located. Then, you can
     simply run step 2 AFTER step 1.
+    
+** MC Analysis
+Once Monte Carlo samples have been created, they can be analyzed in
+order to get a feel for what HSCPs will look like with regards to
+relevant physics variables. 
+#+BEGIN_SRC cpp :tangle /sftp:austin.skeeters@cms07.hep.fsu.edu:/storage/6/work/askeeters/HSCPStudy/HSCP_Analyzers/MC_Analyzer.cpp
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <cmath>
+#include "TROOT.h"
+#include "TFile.h"
+#include "TH1.h"
+#include "TGraph.h"
+#include "TCanvas.h"
+
+using namespace std;
+
+/*Declare canvases for each plot*/
+const unsigned int RECO = 0;
+const unsigned int GEN = 1;
+const unsigned int nTYPES = 2;
+
+//Declare distribution (histogram) Canvases
+TCanvas *canv_BetaDist[nTYPES];
+TCanvas *canv_EtaDist[nTYPES];
+TCanvas *canv_GammaDist[nTYPES];
+TCanvas *canv_IhDist[nTYPES];
+TCanvas *canv_PDist[nTYPES];
+TCanvas *canv_PhiDist[nTYPES];
+TCanvas *canv_PtDist[nTYPES];
+TCanvas *canv_TofDist[nTYPES];
 
 
-* Playing around with org examples
+//Graph (Scatter) Canvases (dep vs independent)
+
+/*Declare the corresponding distributions (TH1D)*/
+
+
+/*Function to parse a file name into mass and charge */
+
+//Create a struct to allow returning both mass and charge
+//as parsed from the file name
+struct NameDat{
+  double charge = 0.0;
+  double mass = 0.0;
+};
+
+//Actual function that will parse the file name and return a NameDat struct
+NameDat FileNameParser( const string &aName ){
+  NameDat outDat; //Struct that will contain the parsed mass and charge
+
+  //Loop through each character of the file name, increasing iCh.
+  //Increase iChunk at each chunk ('_' character)
+  //Store each chunk in a string array (chunks)
+  //Clean up the chunks of interest, and return the data in the struct
+  for (int iCh = 0, int iChunk = 0; iCh < aName.length(); iCh++){
+    //Assign the current character to a variable
+    char currChar = aName[iCh];
+    string chunks[4]; //string array that will contain the chunks
+    stringstream chunk; //stringstream object to contain pieced chunk
+    
+    if ( iCh == '_' ){
+      chunks[j] = chunk.str();
+      chunk = stringstream(string(""));
+      iChunk++;
+    }
+    else
+      chunk << currChar;
+  }
+
+  //Same process as the above, but to clean the mass chunk
+  stringstream massStream;
+  for (int iCh = 0; iCh < chunks[3].length(); iCh++){
+    if ( chunks[3][iCh] == '.' )
+      break;
+    else
+      massStream << iCh;
+  }
+
+  //Convert the strings to floats/doubles
+  outDat.charge = (double)atof(string(chunks[1],6).c_str());
+  outDat.mass = (double)atof(massStream.str().c_str());
+  return outDat;
+}
+
+/*Function to return a string array of all of the available MC files*/
+
+
+/*Main*/
+int main(void){
+  system("!source");
+  system("cd /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/");
+  TFile *outFile = new TFile(fname.c_str(),"RECREATE");
+  outFile.close();
+  return outFile;
+  return 0;
+}
+#+END_SRC
+
+#+RESULTS:
+
+
+* Playing around with org examples                                   :export:
 
   #+begin_src python :results file
     import matplotlib, numpy
@@ -677,7 +788,7 @@
 
 
   
-* Code Snippets
+* Code Snippets                                                      :export:
 ** Bash script populate array of all files
 
    To populate an array of all of the files in a certain folder you
@@ -714,4 +825,4 @@
          mass=${parts[5]}
          #Now we have our relevant info from the file!
      done
-   #+END_SRC
+   #+END_SRC 

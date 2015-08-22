@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Heavy Stable Charged Particle Study</title>
-<!-- 2015-08-12 Wed 19:50 -->
+<!-- 2015-08-16 Sun 22:38 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Austin Vihncent Skeeters" />
@@ -447,7 +447,7 @@ the AOD files is as follows:
 </p>
 
 <pre class="example">
-cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_1400_TuneZ2star_13TeV_pythia6_cff.py --fileout file:mchamp6_M_1400_AOD.root --mc --eventcontent AODSIM --datatier GEN-SIM-DIGI-AOD --conditions MCRUN2_74_V8 --step GEN,SIM,DIGI,L1,DIGI2RAW,HLT:GRun,RAW2DIGI,L1Reco,RECO --python_filename mchamp6_M_1400__cfg.py --magField 38T_PostLS1 --geometry Extended2015 --customise SimG4Core/CustomPhysics/Exotica_HSCP_SIM_cfi.customise,SLHCUpgradeSimulations/Configuration/postLS1Customs.customisePostLS1 --no_exec -n 10
+  cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp6_M_1400_TuneZ2star_13TeV_pythia6_cff.py --fileout file:mchamp6_M_1400_AOD.root --mc --eventcontent AODSIM --datatier GEN-SIM-DIGI-AOD --conditions MCRUN2_74_V8 --step GEN,SIM,DIGI,L1,DIGI2RAW,HLT:GRun,RAW2DIGI,L1Reco,RECO --python_filename mchamp6_M_1400__cfg.py --magField 38T_PostLS1 --geometry Extended2015 --customise SimG4Core/CustomPhysics/Exotica_HSCP_SIM_cfi.customise,SLHCUpgradeSimulations/Configuration/postLS1Customs.customisePostLS1 --no_exec -n 10
 </pre>
 </div>
 </li>
@@ -461,11 +461,11 @@ below in the runner.
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh" id="cfg-creator">#!/bin/bash
-CHARGE=$1
-MASS=$2
-EVENTS=$3
-cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp${CHARGE}_M_${MASS}_TuneZ2star_13TeV_pythia6_cff.py --fileout file:mchamp${CHARGE}_M_${MASS}_AOD.root --mc --eventcontent AODSIM --datatier GEN-SIM-DIGI-AOD --conditions MCRUN2_74_V8 --step GEN,SIM,DIGI,L1,DIGI2RAW,HLT:GRun,RAW2DIGI,L1Reco,RECO --python_filename mchamp${CHARGE}_M_${MASS}_cfg.py --magField 38T_PostLS1 --geometry Extended2015 --customise SimG4Core/CustomPhysics/Exotica_HSCP_SIM_cfi.customise,SLHCUpgradeSimulations/Configuration/postLS1Customs.customisePostLS1 --no_exec -n ${EVENTS}
+<pre class="src src-sh" id="cfg-creator">  <span style="color: #505050;">#</span><span style="color: #505050;">!/bin/bash</span>
+  <span style="color: #ba5b34;">CHARGE</span>=$<span style="color: #ba5b34;">1</span>
+  <span style="color: #ba5b34;">MASS</span>=$<span style="color: #ba5b34;">2</span>
+  <span style="color: #ba5b34;">EVENTS</span>=$<span style="color: #ba5b34;">3</span>
+  cmsDriver.py Configuration/GenProduction/python/ThirteenTeV/HSCPmchamp${<span style="color: #ba5b34;">CHARGE</span>}_M_${<span style="color: #ba5b34;">MASS</span>}_TuneZ2star_13TeV_pythia6_cff.py --fileout file:mchamp${<span style="color: #ba5b34;">CHARGE</span>}_M_${<span style="color: #ba5b34;">MASS</span>}_AOD.root --mc --eventcontent AODSIM --datatier GEN-SIM-DIGI-AOD --conditions MCRUN2_74_V8 --step GEN,SIM,DIGI,L1,DIGI2RAW,HLT:GRun,RAW2DIGI,L1Reco,RECO --python_filename mchamp${<span style="color: #ba5b34;">CHARGE</span>}_M_${<span style="color: #ba5b34;">MASS</span>}_cfg.py --magField 38T_PostLS1 --geometry Extended2015 --customise SimG4Core/CustomPhysics/Exotica_HSCP_SIM_cfi.customise,SLHCUpgradeSimulations/Configuration/postLS1Customs.customisePostLS1 --no_exec -n ${<span style="color: #ba5b34;">EVENTS</span>}
 </pre>
 </div>
 
@@ -475,7 +475,7 @@ following within the Org file:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh" id="cfg-creator-runner">sh cfgCreator.sh ${charge} ${mass} ${events}
+<pre class="src src-sh" id="cfg-creator-runner">  sh cfgCreator.sh ${<span style="color: #ba5b34;">charge</span>} ${<span style="color: #ba5b34;">mass</span>} ${<span style="color: #ba5b34;">events</span>}
 </pre>
 </div>
 </div>
@@ -500,17 +500,17 @@ used. An example script is as follows:
 
 <div class="org-src-container">
 
-<pre class="src src-sh" id="batch-script-example">#! /bin/sh
-CMSSW_PROJECT_SRC="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/"
-CFG_FILE="mchamp6_M_1400_cfg.py"
-OUTPUT_FILE="mchamp6_M_1400.root"
-TOP="$PWD"
+<pre class="src src-sh" id="batch-script-example">  <span style="color: #505050;">#</span><span style="color: #505050;">! /bin/sh</span>
+  <span style="color: #ba5b34;">CMSSW_PROJECT_SRC</span>=<span style="color: #953331;">"/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/"</span>
+  <span style="color: #ba5b34;">CFG_FILE</span>=<span style="color: #953331;">"mchamp6_M_1400_cfg.py"</span>
+  <span style="color: #ba5b34;">OUTPUT_FILE</span>=<span style="color: #953331;">"mchamp6_M_1400.root"</span>
+  <span style="color: #ba5b34;">TOP</span>=<span style="color: #953331;">"$PWD"</span>
 
-cd $CMSSW_PROJECT_SRC
-eval `scramv1 runtime -sh`
-cd $TOP
-cmsRun $CMSSW_PROJECT_SRC/$CFG_FILE
-rfcp $OUTPUT_FILE $CMSSW_PROJECT_SRC$OUTPUT_FILE
+  <span style="color: #385e6b;">cd</span> $<span style="color: #ba5b34;">CMSSW_PROJECT_SRC</span>
+  <span style="color: #385e6b;">eval</span> <span style="color: #fa8072;">`scramv1 runtime -sh`</span>
+  <span style="color: #385e6b;">cd</span> $<span style="color: #ba5b34;">TOP</span>
+  cmsRun $<span style="color: #ba5b34;">CMSSW_PROJECT_SRC</span>/$<span style="color: #ba5b34;">CFG_FILE</span>
+  rfcp $<span style="color: #ba5b34;">OUTPUT_FILE</span> $<span style="color: #ba5b34;">CMSSW_PROJECT_SRC</span>$<span style="color: #ba5b34;">OUTPUT_FILE</span>
 </pre>
 </div>
 
@@ -520,7 +520,7 @@ permissions with:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">chmod 744 lxplusbatchscript.sh
+<pre class="src src-sh">  chmod 744 lxplusbatchscript.sh
 </pre>
 </div>
 
@@ -529,7 +529,7 @@ Now the job(s) must be submitted to the batch service:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh" id="batch-sender-example">bsub -R "pool&gt;30000" -q 1nw -J job1 &lt; lxplusbatchscript.csh
+<pre class="src src-sh" id="batch-sender-example">  bsub -R <span style="color: #953331;">"pool&gt;30000"</span> -q 1nw -J job1 &lt; lxplusbatchscript.csh
 </pre>
 </div>
 <p>
@@ -586,44 +586,44 @@ means of the following scripts:
 
 <div class="org-src-container">
 
-<pre class="src src-sh" id="batch-creator">#!/bin/bash
+<pre class="src src-sh" id="batch-creator">  <span style="color: #505050;">#</span><span style="color: #505050;">!/bin/bash</span>
 
-#Populate an array of all of the configuration files
-shopt -s nullglob
-filearray=( "HSCP_MC_cfg_Files"/* )
-shopt -u nullglob
+  <span style="color: #505050;">#</span><span style="color: #505050;">Populate an array of all of the configuration files</span>
+  <span style="color: #385e6b;">shopt</span> -s nullglob
+  <span style="color: #ba5b34;">filearray</span>=( <span style="color: #953331;">"HSCP_MC_cfg_Files"</span>/* )
+  <span style="color: #385e6b;">shopt</span> -u nullglob
 
-#Create a bash file for each config file
-for file in "${filearray[@]}"
-do
-    parts=(${file//_/ })
-    charge=${parts[3]}
-    #Extract the number from the charge
-    chargeFixed=$(echo $charge | tr -dc '0-9')
-    mass=${parts[5]}
+  <span style="color: #505050;">#</span><span style="color: #505050;">Create a bash file for each config file</span>
+  <span style="color: #909737;">for</span> file<span style="color: #909737;"> in</span> <span style="color: #953331;">"${filearray[@]}"</span>
+  <span style="color: #909737;">do</span>
+      <span style="color: #ba5b34;">parts</span>=(${<span style="color: #ba5b34;">file</span>//_/ })
+      <span style="color: #ba5b34;">charge</span>=${<span style="color: #ba5b34;">parts</span>[3]}
+      <span style="color: #505050;">#</span><span style="color: #505050;">Extract the number from the charge</span>
+      <span style="color: #ba5b34;">chargeFixed</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ba5b34;">charge</span> | tr -dc <span style="color: #953331;">'0-9'</span>)
+      <span style="color: #ba5b34;">mass</span>=${<span style="color: #ba5b34;">parts</span>[5]}
 
-    #All of the important data has been stripped from the config filename
-    #Now to create the bath scripts
-    filename="mchamp${chargeFixed}_M_${mass}.sh"
-    cfgfile="mchamp${chargeFixed}_M_${mass}_cfg.py"
-    rootfile="mchamp${chargeFixed}_M_${mass}_AOD.root"
-    #Create an empty file to be filled
-    touch $filename
-    #Use echo to populate the file contents. Not the cleanest way, but it works for a file this short.
-    echo "#!/bin/sh"&gt;$filename
-    echo 'CMSSW_PROJECT_SRC="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/"'&gt;&gt;$filename
-    echo """CFG_FILE='/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_cfg_Files/${cfgfile}'"""&gt;&gt;$filename
-    echo """OUTPUT_FILE='/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/$rootfile'"""&gt;&gt;$filename
-    echo "OUT_FILE='$rootfile'"&gt;&gt;$filename
-    echo 'TOP="$PWD"'&gt;&gt;$filename
-    echo 'cd $CMSSW_PROJECT_SRC'&gt;&gt;$filename
-    echo 'eval `scramv1 runtime -sh`'&gt;&gt;$filename
-    echo 'cd $TOP'&gt;&gt;$filename
-    echo 'cmsRun $CFG_FILE'&gt;&gt;$filename
-    echo 'rfcp $OUT_FILE $OUTPUT_FILE'&gt;&gt;$filename
-    #DO NOT FORGET to change the config file permissions if you are creating these by hand.
-    chmod 744 $filename
-done
+      <span style="color: #505050;">#</span><span style="color: #505050;">All of the important data has been stripped from the config filename</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">Now to create the bath scripts</span>
+      <span style="color: #ba5b34;">filename</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}.sh"</span>
+      <span style="color: #ba5b34;">cfgfile</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_cfg.py"</span>
+      <span style="color: #ba5b34;">rootfile</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_AOD.root"</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">Create an empty file to be filled</span>
+      touch $<span style="color: #ba5b34;">filename</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">Use echo to populate the file contents. Not the cleanest way, but it works for a file this short.</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">"#!/bin/sh"</span>&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">'CMSSW_PROJECT_SRC="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/"'</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">"""CFG_FILE='/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_cfg_Files/${cfgfile}'"""</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">"""OUTPUT_FILE='/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/$rootfile'"""</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">"OUT_FILE='$rootfile'"</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">'TOP="$PWD"'</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">'cd $CMSSW_PROJECT_SRC'</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">'eval `scramv1 runtime -sh`'</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">'cd $TOP'</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">'cmsRun $CFG_FILE'</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #385e6b;">echo</span> <span style="color: #953331;">'rfcp $OUT_FILE $OUTPUT_FILE'</span>&gt;&gt;$<span style="color: #ba5b34;">filename</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">DO NOT FORGET to change the config file permissions if you are creating these by hand.</span>
+      chmod 744 $<span style="color: #ba5b34;">filename</span>
+  <span style="color: #909737;">done</span>
 </pre>
 </div>
 
@@ -643,20 +643,20 @@ AOD Root file.
 
 <div class="org-src-container">
 
-<pre class="src src-sh" id="batch-sender">#!/bin/bash
+<pre class="src src-sh" id="batch-sender">  <span style="color: #505050;">#</span><span style="color: #505050;">!/bin/bash</span>
 
-#Populate an array of all of the batch scripts 
-shopt -s nullglob
-filearray=( "HSCP_MC_sh_Files"/* )
-shopt -u nullglob
+  <span style="color: #505050;">#</span><span style="color: #505050;">Populate an array of all of the batch scripts </span>
+  <span style="color: #385e6b;">shopt</span> -s nullglob
+  <span style="color: #ba5b34;">filearray</span>=( <span style="color: #953331;">"HSCP_MC_sh_Files"</span>/* )
+  <span style="color: #385e6b;">shopt</span> -u nullglob
 
-for file in "${filearray[@]}"
-do
-    #Strip off the chracters that we dont need
-    fileFixed=${file:17}
-    #Send to the two day queue. This can be changed
-    bsub -R "pool&gt;20000" -q 2nd -J $fileFixed &lt; /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_sh_Files/$fileFixed
-done
+  <span style="color: #909737;">for</span> file<span style="color: #909737;"> in</span> <span style="color: #953331;">"${filearray[@]}"</span>
+  <span style="color: #909737;">do</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">Strip off the chracters that we dont need</span>
+      <span style="color: #ba5b34;">fileFixed</span>=${<span style="color: #ba5b34;">file</span>:17}
+      <span style="color: #505050;">#</span><span style="color: #505050;">Send to the two day queue. This can be changed</span>
+      bsub -R <span style="color: #953331;">"pool&gt;20000"</span> -q 2nd -J $<span style="color: #ba5b34;">fileFixed</span> &lt; /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_sh_Files/$<span style="color: #ba5b34;">fileFixed</span>
+  <span style="color: #909737;">done</span>
 </pre>
 </div>
 </div>
@@ -684,30 +684,30 @@ the following:
 
 <div class="org-src-container">
 
-<pre class="src src-python">import sys, os
-import FWCore.ParameterSet.Config as cms
-#Makes EDM from AOD
-isSignal = True
-isBckg = False
-isData = False
-isSkimmedSample = False
-GTAG = 'MCRUN2_74_V8'
-OUTPUTFILE = '/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_EDM.root'
+<pre class="src src-python">  <span style="color: #909737;">import</span> sys, os
+  <span style="color: #909737;">import</span> FWCore.ParameterSet.Config <span style="color: #909737;">as</span> cms
+  <span style="color: #505050;">#</span><span style="color: #505050;">Makes EDM from AOD</span>
+  <span style="color: #ba5b34;">isSignal</span> = <span style="color: #7f355e;">True</span>
+  <span style="color: #ba5b34;">isBckg</span> = <span style="color: #7f355e;">False</span>
+  <span style="color: #ba5b34;">isData</span> = <span style="color: #7f355e;">False</span>
+  <span style="color: #ba5b34;">isSkimmedSample</span> = <span style="color: #7f355e;">False</span>
+  <span style="color: #ba5b34;">GTAG</span> = <span style="color: #953331;">'MCRUN2_74_V8'</span>
+  <span style="color: #ba5b34;">OUTPUTFILE</span> = <span style="color: #953331;">'/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_EDM.root'</span>
 
-#InputFileList = cms.untracked.vstring()
+  <span style="color: #505050;">#</span><span style="color: #505050;">InputFileList = cms.untracked.vstring()</span>
 
-#debug input files 
-#this list is overwritten by CRAB
-InputFileList = cms.untracked.vstring(
-    #The comment is an example of how to do this from a remote directory
-    #'root://cmseos.fnal.gov//eos/uscms/store/user/aackert/HSCP/AODgen/condorjdls/step2_condortest.root',
-    #Below is the file that you want to conver from AOD to EDM
-    'file:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_AOD.root'
-)
+  <span style="color: #505050;">#</span><span style="color: #505050;">debug input files </span>
+  <span style="color: #505050;">#</span><span style="color: #505050;">this list is overwritten by CRAB</span>
+  <span style="color: #ba5b34;">InputFileList</span> = cms.untracked.vstring(
+      <span style="color: #505050;">#</span><span style="color: #505050;">The comment is an example of how to do this from a remote directory</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">'root://cmseos.fnal.gov//eos/uscms/store/user/aackert/HSCP/AODgen/condorjdls/step2_condortest.root',</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">Below is the file that you want to conver from AOD to EDM</span>
+      <span style="color: #953331;">'file:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/mchamp3_M_400_AOD.root'</span>
+  )
 
 
-#main EDM tuple cfg that depends on the above parameters
-execfile( os.path.expandvars('${CMSSW_BASE}/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_cfg.py') )
+  <span style="color: #505050;">#</span><span style="color: #505050;">main EDM tuple cfg that depends on the above parameters</span>
+  <span style="color: #385e6b;">execfile</span>( os.path.expandvars(<span style="color: #953331;">'${CMSSW_BASE}/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_cfg.py'</span>) )
 </pre>
 </div>
 
@@ -734,7 +734,7 @@ simply by running the following:
 
 <div class="org-src-container">
 
-<pre class="src src-sh">cmsRun HSCParticleProducer_Signal_cfg.py
+<pre class="src src-sh">  cmsRun HSCParticleProducer_Signal_cfg.py
 </pre>
 </div>
 
@@ -758,72 +758,72 @@ jobs.
 
 <div class="org-src-container">
 
-<pre class="src src-sh" id="aod-to-edm-creator">#!/bin/bash
+<pre class="src src-sh" id="aod-to-edm-creator">  <span style="color: #505050;">#</span><span style="color: #505050;">!/bin/bash</span>
 
-#Populate an array of all of the AOD files
-shopt -s nullglob
-filearray=( "HSCP_MC_Root_Files"/*AOD* )
-shopt -u nullglob
+  <span style="color: #505050;">#</span><span style="color: #505050;">Populate an array of all of the AOD files</span>
+  <span style="color: #385e6b;">shopt</span> -s nullglob
+  <span style="color: #ba5b34;">filearray</span>=( <span style="color: #953331;">"HSCP_MC_Root_Files"</span>/*AOD* )
+  <span style="color: #385e6b;">shopt</span> -u nullglob
 
-for file in "${filearray[@]}"
-do
-    parts=(${file//_/ })
-    charge=${parts[3]}
-    #Extract the number from the charge
-    chargeFixed=$(echo $charge | tr -dc '0-9')
-    mass=${parts[5]}    
-    aod_file="mchamp${chargeFixed}_M_${mass}_AOD.root"
-    root_file="mchamp${chargeFixed}_M_${mass}_EDM.root"
-    python_file="mchamp${chargeFixed}_M_${mass}_cfg.py"
+  <span style="color: #909737;">for</span> file<span style="color: #909737;"> in</span> <span style="color: #953331;">"${filearray[@]}"</span>
+  <span style="color: #909737;">do</span>
+      <span style="color: #ba5b34;">parts</span>=(${<span style="color: #ba5b34;">file</span>//_/ })
+      <span style="color: #ba5b34;">charge</span>=${<span style="color: #ba5b34;">parts</span>[3]}
+      <span style="color: #505050;">#</span><span style="color: #505050;">Extract the number from the charge</span>
+      <span style="color: #ba5b34;">chargeFixed</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ba5b34;">charge</span> | tr -dc <span style="color: #953331;">'0-9'</span>)
+      <span style="color: #ba5b34;">mass</span>=${<span style="color: #ba5b34;">parts</span>[5]}    
+      <span style="color: #ba5b34;">aod_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_AOD.root"</span>
+      <span style="color: #ba5b34;">root_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_EDM.root"</span>
+      <span style="color: #ba5b34;">python_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_cfg.py"</span>
 
-    cat &gt; /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_AODtoEDM_Python_Files/${python_file} &lt;&lt; EOF
-import sys, os
-import FWCore.ParameterSet.Config as cms
-#Makes EDM from AOD
-isSignal = True
-isBckg = False
-isData = False
-isSkimmedSample = False
-GTAG = 'MCRUN2_74_V8'
-OUTPUTFILE = '/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/${root_file}'
+      cat &gt; /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_AODtoEDM_Python_Files/${<span style="color: #ba5b34;">python_file</span>} &lt;&lt; EOF
+<span style="color: #ffff00; font-weight: bold;">  import sys, os</span>
+<span style="color: #ffff00; font-weight: bold;">  import FWCore.ParameterSet.Config as cms</span>
+<span style="color: #ffff00; font-weight: bold;">  #Makes EDM from AOD</span>
+<span style="color: #ffff00; font-weight: bold;">  isSignal = True</span>
+<span style="color: #ffff00; font-weight: bold;">  isBckg = False</span>
+<span style="color: #ffff00; font-weight: bold;">  isData = False</span>
+<span style="color: #ffff00; font-weight: bold;">  isSkimmedSample = False</span>
+<span style="color: #ffff00; font-weight: bold;">  GTAG = 'MCRUN2_74_V8'</span>
+<span style="color: #ffff00; font-weight: bold;">  OUTPUTFILE = '/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/${root_file}'</span>
 
-InputFileList = cms.untracked.vstring(
-'file:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/${aod_file}'
-)
+<span style="color: #ffff00; font-weight: bold;">  InputFileList = cms.untracked.vstring(</span>
+<span style="color: #ffff00; font-weight: bold;">  'file:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_Root_Files/${aod_file}'</span>
+<span style="color: #ffff00; font-weight: bold;">  )</span>
 
-execfile( '${CMSSW_BASE}/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_cfg.py' )
-EOF
+<span style="color: #ffff00; font-weight: bold;">  execfile( '${CMSSW_BASE}/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_cfg.py' )</span>
+<span style="color: #ffff00; font-weight: bold;">  EOF</span>
 
-done
+  <span style="color: #909737;">done</span>
 </pre>
 </div>
 
 <div class="org-src-container">
 
-<pre class="src src-sh" id="aod-to-edm-runner">#!/bin/bash
+<pre class="src src-sh" id="aod-to-edm-runner">  <span style="color: #505050;">#</span><span style="color: #505050;">!/bin/bash</span>
 
-shopt -s nullglob
-filearray=( "HSCP_MC_Root_Files"/*AOD* )
-shopt -u nullglob
+  <span style="color: #385e6b;">shopt</span> -s nullglob
+  <span style="color: #ba5b34;">filearray</span>=( <span style="color: #953331;">"HSCP_MC_Root_Files"</span>/*AOD* )
+  <span style="color: #385e6b;">shopt</span> -u nullglob
 
-for file in "${filearray[@]}"
-do
-    parts=(${file//_/ })
-    charge=${parts[3]}
-    #Extract the number from the charge
-    chargeFixed=$(echo $charge | tr -dc '0-9')
-    mass=${parts[5]}    
-    aod_file="mchamp${chargeFixed}_M_${mass}_AOD.root"
-    root_file="mchamp${chargeFixed}_M_${mass}_EDM.root"
-    python_file="mchamp${chargeFixed}_M_${mass}_cfg.py"
+  <span style="color: #909737;">for</span> file<span style="color: #909737;"> in</span> <span style="color: #953331;">"${filearray[@]}"</span>
+  <span style="color: #909737;">do</span>
+      <span style="color: #ba5b34;">parts</span>=(${<span style="color: #ba5b34;">file</span>//_/ })
+      <span style="color: #ba5b34;">charge</span>=${<span style="color: #ba5b34;">parts</span>[3]}
+      <span style="color: #505050;">#</span><span style="color: #505050;">Extract the number from the charge</span>
+      <span style="color: #ba5b34;">chargeFixed</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ba5b34;">charge</span> | tr -dc <span style="color: #953331;">'0-9'</span>)
+      <span style="color: #ba5b34;">mass</span>=${<span style="color: #ba5b34;">parts</span>[5]}    
+      <span style="color: #ba5b34;">aod_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_AOD.root"</span>
+      <span style="color: #ba5b34;">root_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_EDM.root"</span>
+      <span style="color: #ba5b34;">python_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_cfg.py"</span>
 
-    #Replace the standard configuration file with the one currently being ran
-    cp /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_AODtoEDM_Python_Files/${python_file} /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_Signal_cfg.py
-    cd /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/
-    cmsRun HSCParticleProducer_Signal_cfg.py
-    #Don't do the next file until the previous one has ran to completion, as these jobs are not sent to batch
-    wait
-done
+      <span style="color: #505050;">#</span><span style="color: #505050;">Replace the standard configuration file with the one currently being ran</span>
+      cp /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/HSCP_MC_AODtoEDM_Python_Files/${<span style="color: #ba5b34;">python_file</span>} /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/HSCParticleProducer_Signal_cfg.py
+      <span style="color: #385e6b;">cd</span> /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/MakeEDMtuples/
+      cmsRun HSCParticleProducer_Signal_cfg.py
+      <span style="color: #505050;">#</span><span style="color: #505050;">Don't do the next file until the previous one has ran to completion, as these jobs are not sent to batch</span>
+      <span style="color: #385e6b;">wait</span>
+  <span style="color: #909737;">done</span>
 </pre>
 </div>
 </div>
@@ -891,7 +891,7 @@ Now that the above file has been properly edited, we simply run:
 
 <div class="org-src-container">
 
-<pre class="src src-sh">Launch.py 1
+<pre class="src src-sh">  Launch.py 1
 </pre>
 </div>
 
@@ -912,7 +912,7 @@ sure. Then just do:
 
 <div class="org-src-container">
 
-<pre class="src src-sh">source filename.sh &gt;&amp; output.txt &amp;
+<pre class="src src-sh">  <span style="color: #385e6b;">source</span> filename.sh &gt;&amp; output.txt &amp;
 </pre>
 </div>
 
@@ -936,29 +936,29 @@ this in order to avoid the creation of duplicate files.
 
 <div class="org-src-container">
 
-<pre class="src src-sh" id="edm-to-ntuple-creator">#!/bin/bash
+<pre class="src src-sh" id="edm-to-ntuple-creator">  <span style="color: #505050;">#</span><span style="color: #505050;">!/bin/bash</span>
 
-shopt -s nullglob
-filearray=( "HSCP_MC_Root_Files"/*EDM* )
-shopt -u nullglob
-#printf "%s\n" "${filearray[@]}"
-appendTo="/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Analysis_Samples.txt"
-#Create a python file for each config file    
-for file in "${filearray[@]}"
-do
-    parts=(${file//_/ })
-    charge=${parts[3]}
-    #Extract the number from the charge
-    chargeFixed=$(echo $charge | tr -dc '0-9')
-    mass=${parts[5]}    
-    aod_file="mchamp${chargeFixed}_M_${mass}_AOD.root"
-    edm_file="mchamp${chargeFixed}_M_${mass}_EDM"
-    gen_file="mchamp${chargeFixed}_M_${mass}"
-    #We need to append to the Analysis_Samples.txt file
-    cat &gt;&gt; /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Analysis_Samples.txt &lt;&lt; EOF
-"CMSSW_7_4",   2, "$gen_file"    ,"$edm_file"    , "MC: mchamp${chargeFixed} ${mass} GeV/#font[12]{c}^{2}" , "S10", $mass, +9.8480000000E+01, 0, 1.000, 1.000, 1.000
-EOF
-done
+  <span style="color: #385e6b;">shopt</span> -s nullglob
+  <span style="color: #ba5b34;">filearray</span>=( <span style="color: #953331;">"HSCP_MC_Root_Files"</span>/*EDM* )
+  <span style="color: #385e6b;">shopt</span> -u nullglob
+  <span style="color: #505050;">#</span><span style="color: #505050;">printf "%s\n" "${filearray[@]}"</span>
+  <span style="color: #ba5b34;">appendTo</span>=<span style="color: #953331;">"/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Analysis_Samples.txt"</span>
+  <span style="color: #505050;">#</span><span style="color: #505050;">Create a python file for each config file    </span>
+  <span style="color: #909737;">for</span> file<span style="color: #909737;"> in</span> <span style="color: #953331;">"${filearray[@]}"</span>
+  <span style="color: #909737;">do</span>
+      <span style="color: #ba5b34;">parts</span>=(${<span style="color: #ba5b34;">file</span>//_/ })
+      <span style="color: #ba5b34;">charge</span>=${<span style="color: #ba5b34;">parts</span>[3]}
+      <span style="color: #505050;">#</span><span style="color: #505050;">Extract the number from the charge</span>
+      <span style="color: #ba5b34;">chargeFixed</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ba5b34;">charge</span> | tr -dc <span style="color: #953331;">'0-9'</span>)
+      <span style="color: #ba5b34;">mass</span>=${<span style="color: #ba5b34;">parts</span>[5]}    
+      <span style="color: #ba5b34;">aod_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_AOD.root"</span>
+      <span style="color: #ba5b34;">edm_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}_EDM"</span>
+      <span style="color: #ba5b34;">gen_file</span>=<span style="color: #953331;">"mchamp${chargeFixed}_M_${mass}"</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">We need to append to the Analysis_Samples.txt file</span>
+      cat &gt;&gt; /afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Analysis_Samples.txt &lt;&lt; EOF
+<span style="color: #ffff00; font-weight: bold;">  "CMSSW_7_4",   2, "$gen_file"    ,"$edm_file"    , "MC: mchamp${chargeFixed} ${mass} GeV/#font[12]{c}^{2}" , "S10", $mass, +9.8480000000E+01, 0, 1.000, 1.000, 1.000</span>
+<span style="color: #ffff00; font-weight: bold;">  EOF</span>
+  <span style="color: #909737;">done</span>
 </pre>
 </div>
 
@@ -969,7 +969,7 @@ the above. Simply run:
 
 <div class="org-src-container">
 
-<pre class="src src-sh" id="launch-Step-1">Launch.py 1
+<pre class="src src-sh" id="launch-Step-1"> Launch.py 1
 </pre>
 </div>
 </div>
@@ -999,25 +999,25 @@ simply run step 2 AFTER step 1.
 <div class="outline-text-2" id="text-2">
 <div class="org-src-container">
 
-<pre class="src src-python">import matplotlib, numpy
-#matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-fig=plt.figure(figsize=(4,2))
-x=numpy.linspace(-15,15)
-plt.plot(numpy.sin(x)/x)
-fig.tight_layout()
-plt.savefig('/tmp/python-matplot-fig.png')
-return '/tmp/python-matplot-fig.png' # return filename to org-mode
+<pre class="src src-python">  <span style="color: #909737;">import</span> matplotlib, numpy
+  <span style="color: #505050;">#</span><span style="color: #505050;">matplotlib.use('Agg')</span>
+  <span style="color: #909737;">import</span> matplotlib.pyplot <span style="color: #909737;">as</span> plt
+  <span style="color: #ba5b34;">fig</span>=plt.figure(figsize=(4,2))
+  <span style="color: #ba5b34;">x</span>=numpy.linspace(-15,15)
+  plt.plot(numpy.sin(x)/x)
+  fig.tight_layout()
+  plt.savefig(<span style="color: #953331;">'/tmp/python-matplot-fig.png'</span>)
+  <span style="color: #909737;">return</span> <span style="color: #953331;">'/tmp/python-matplot-fig.png'</span> <span style="color: #505050;"># </span><span style="color: #505050;">return filename to org-mode</span>
 </pre>
 </div>
 
 <div class="org-src-container">
 
-<pre class="src src-cpp">#include &lt;iostream&gt;
-using namespace std;
-int main(void){
-  cout &lt;&lt; "Hello world!" &lt;&lt; endl;
-  }
+<pre class="src src-cpp"><span style="color: #385e6b;">  #include</span> <span style="color: #953331;">&lt;iostream&gt;</span>
+  <span style="color: #909737;">using</span> <span style="color: #909737;">namespace</span> <span style="color: #7f355e;">std</span>;
+  <span style="color: #909737;">int</span> <span style="color: #385e6b;">main</span>(<span style="color: #909737;">void</span>){
+    cout &lt;&lt; <span style="color: #953331;">"Hello world!"</span> &lt;&lt; endl;
+    }
 </pre>
 </div>
 
@@ -1044,15 +1044,15 @@ can do something similar to:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">shopt -s nullglob
-filearray=( "HSCP_MC_sh_Files"/* )
-shopt -u nullglob
-#Now to loop through them
-for file in "${filearray[@]}"
-do
-    #strip off the characters that we don't need
-    fileFixed=${file:17}
-done
+<pre class="src src-sh">  <span style="color: #385e6b;">shopt</span> -s nullglob
+  <span style="color: #ba5b34;">filearray</span>=( <span style="color: #953331;">"HSCP_MC_sh_Files"</span>/* )
+  <span style="color: #385e6b;">shopt</span> -u nullglob
+  <span style="color: #505050;">#</span><span style="color: #505050;">Now to loop through them</span>
+  <span style="color: #909737;">for</span> file<span style="color: #909737;"> in</span> <span style="color: #953331;">"${filearray[@]}"</span>
+  <span style="color: #909737;">do</span>
+      <span style="color: #505050;">#</span><span style="color: #505050;">strip off the characters that we don't need</span>
+      <span style="color: #ba5b34;">fileFixed</span>=${<span style="color: #ba5b34;">file</span>:17}
+  <span style="color: #909737;">done</span>
 </pre>
 </div>
 <p>
@@ -1071,19 +1071,19 @@ to parse. So:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">shopt -s nullglob
-filearray=( "HSCP_MC_cfg_Files"/* )
-shopt -u nullglob
-#Now to loop through them
-for file in "${filearray[@]}"
-do
-    parts=(${file//_/ })
-    charge=${parts[3]}
-    #extract the number from the charge
-    chargeFixed=$(echo $charge | tr -dc '0-9')
-    mass=${parts[5]}
-    #Now we have our relevant info from the file!
-done
+<pre class="src src-sh">  <span style="color: #385e6b;">shopt</span> -s nullglob
+  <span style="color: #ba5b34;">filearray</span>=( <span style="color: #953331;">"HSCP_MC_cfg_Files"</span>/* )
+  <span style="color: #385e6b;">shopt</span> -u nullglob
+  <span style="color: #505050;">#</span><span style="color: #505050;">Now to loop through them</span>
+  <span style="color: #909737;">for</span> file<span style="color: #909737;"> in</span> <span style="color: #953331;">"${filearray[@]}"</span>
+  <span style="color: #909737;">do</span>
+      <span style="color: #ba5b34;">parts</span>=(${<span style="color: #ba5b34;">file</span>//_/ })
+      <span style="color: #ba5b34;">charge</span>=${<span style="color: #ba5b34;">parts</span>[3]}
+      <span style="color: #505050;">#</span><span style="color: #505050;">extract the number from the charge</span>
+      <span style="color: #ba5b34;">chargeFixed</span>=$(<span style="color: #fa8072;">echo</span> $<span style="color: #ba5b34;">charge</span> | tr -dc <span style="color: #953331;">'0-9'</span>)
+      <span style="color: #ba5b34;">mass</span>=${<span style="color: #ba5b34;">parts</span>[5]}
+      <span style="color: #505050;">#</span><span style="color: #505050;">Now we have our relevant info from the file!</span>
+  <span style="color: #909737;">done</span>
 </pre>
 </div>
 </div>
@@ -1092,7 +1092,7 @@ done
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Austin Vihncent Skeeters</p>
-<p class="date">Created: 2015-08-12 Wed 19:50</p>
+<p class="date">Created: 2015-08-16 Sun 22:38</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.4.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
