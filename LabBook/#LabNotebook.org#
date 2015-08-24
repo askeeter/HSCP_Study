@@ -703,13 +703,13 @@ one local, and one on the CMS computers, where it will be compiled.
   const unsigned int GEN = 1;
   const unsigned int nTYPES = 2;
 
-  //Declare distribution (histogram) Canvases
-  TCanvas *canv_BetaDist[nTYPES];
-  TCanvas *canv_EtaDist[nTYPES];
-  TCanvas *canv_GammaDist[nTYPES];
-  TCanvas *canv_IhDist[nTYPES];
-  TCanvas *canv_PDist[nTYPES];
-  TCanvas *canv_PhiDist[nTYPES];
+  //Declare distribution (histog// ram) Canvases
+  // TCanvas *canv_BetaDist[nTYPES];
+  // TCanvas *canv_EtaDist[nTYPES];
+  // TCanvas *canv_GammaDist[nTYPES];
+  // TCanvas *canv_IhDist[nTYPES];
+  // TCanvas *canv_PDist[nTYPES];
+  // TCanvas *canv_PhiDist[nTYPES];
   TCanvas *canv_PtDist[nTYPES];
   TCanvas *canv_TofDist[nTYPES];
 
