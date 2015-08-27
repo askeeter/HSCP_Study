@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -30,16 +31,16 @@ TCanvas *canv_PhiDist[nTYPES]; //azimuthal angle
 TCanvas *canv_PtDist[nTYPES];
 TCanvas *canv_ThetaDist[nTYPES]; //polar angle
 TCanvas *canv_TofDist[nTYPES];
-TCanvas *canv_TofTrelRatioDist[nTypes];
+TCanvas *canv_TofTrelRatioDist[nTYPES];
 
 //Graph (Scatter) Canvases (dep vs independent)
 TCanvas *canv_Ih_Vs_P[nTYPES];
 //one for given mass with varied charge colors
 //one for given charge with varied masses
 //for the following three distributions
-TCanvas *canv_Preco_Vs_Pgen[nCHARGE][nMASS];
-TCanvas *canv_Tofreco_Vs_Tofgen[nCHARGE][nMASS];
-TCanvas *canv_Ihreco_Vs_Ihgen[nCHARGE][nMASS];
+// TCanvas *canv_Preco_Vs_Pgen[nCHARGE][nMASS];
+// TCanvas *canv_Tofreco_Vs_Tofgen[nCHARGE][nMASS];
+// TCanvas *canv_Ihreco_Vs_Ihgen[nCHARGE][nMASS];
 
 /*Declare the corresponding distributions (TH1D)*/
 
@@ -53,18 +54,20 @@ string *ListOfFiles(){
   
   //First, count how many files we will be reading
   if(!(inStream = popen("ls /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/Histos_mchamp*.root -l | wc -l", "r"))){
-    return 1;
+    cout << "Something went wrong listing and/or capturing the files" << endl;
   }
-  
+    
   while(fgets(charnFiles, sizeof(charnFiles), inStream)!=NULL){
     streamnFiles << charnFiles;
   }
-  
+
   unsigned int nFiles = atoi(streamnFiles.str().c_str());
+  cout << "There are " << nFiles << " files to be processed" << endl;
+  string *listOfFiles = new string[nFiles];
   pclose(inStream);
 
   //Now we have the number of files, and can dynamicall allocate a string array for it.
-  string *listOfFiles = new string[nFiles];
+  /*
   int filePos = 0;
   //Now we need to read in the list of files
   //Will do something similar to the above, but using this method to get only the file names
@@ -81,7 +84,7 @@ string *ListOfFiles(){
       popenStream.str(string());
       filePos++;
     }
-  }
+  }*/
   return listOfFiles;
 }
 
@@ -89,27 +92,27 @@ string *ListOfFiles(){
 //Create a struct to allow returning both mass and charge
 //as parsed from the file name
 struct NameDat{
-  double charge = 0.0;
-  double mass = 0.0;
+  double charge;
+  double mass;
 };
 
 //Actual function that will parse the file name and return a NameDat struct
 NameDat FileNameParser( const string &aName ){
   NameDat outDat; //Struct that will contain the parsed mass and charge
-
+  string chunks[4]; //string array that will contain the chunks
   //Loop through each character of the file name, increasing iCh.
   //Increase iChunk at each chunk ('_' character)
   //Store each chunk in a string array (chunks)
   //Clean up the chunks of interest, and return the data in the struct
-  for (int iCh = 0, int iChunk = 0; iCh < aName.length(); iCh++){
+    
+  for (int iCh = 0, iChunk = 0; iCh < aName.length(); iCh++){
     //Assign the current character to a variable
     char currChar = aName[iCh];
-    string chunks[4]; //string array that will contain the chunks
     stringstream chunk; //stringstream object to contain pieced chunk
-    
-    if ( iCh == '_' ){
-      chunks[j] = chunk.str();
-      chunk = stringstream(string(""));
+      
+    if ( currChar == '_' ){
+      chunks[iChunk] = chunk.str();
+      chunk.str(string(""));
       iChunk++;
     }
     else
@@ -119,7 +122,7 @@ NameDat FileNameParser( const string &aName ){
   //Same process as the above, but to clean the mass chunk
   stringstream massStream;
   for (int iCh = 0; iCh < chunks[3].length(); iCh++){
-    if ( chunks[3][iCh] == '.' )
+    if ( chunks[3].at(iCh) == '.' )
       break;
     else
       massStream << iCh;
@@ -138,8 +141,9 @@ NameDat FileNameParser( const string &aName ){
 int main(void){
   system("!source");
   system("cd /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/");
-  TFile *outFile = new TFile(fname.c_str(),"RECREATE");
-  outFile.close();
-  return outFile;
+  TFile *outFile = new TFile("MC_Analysis.root","RECREATE");
+  outFile->Close();
+
+  string *fileList = ListOfFiles();
   return 0;
 }
