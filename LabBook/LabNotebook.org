@@ -660,7 +660,7 @@ The two snippets below allow the macro to be saved to two locations:
 one local, and one on the CMS computers, where it will be compiled.
 
 
-#+HEADERS: :tangle ~/HSCP_Study/HSCP_MC_Creation/Macros/MC_Analyzer.cpp :noweb tangle
+#+HEADERS: :tangle ~/HSCP_Study/HSCP_MC_Analysis/Macros/MC_Analyzer.cpp :noweb tangle
 #+BEGIN_SRC cpp
 <<MC_Analyzer.cpp>>
 #+END_SRC
@@ -670,119 +670,171 @@ one local, and one on the CMS computers, where it will be compiled.
 <<MC_Analyzer.cpp>>
 #+END_SRC
 
-#+NAME: test.cpp
-#+HEADERS: :dir /ssh:austin.skeeters@cms07.hep.fsu.edu:/storage/6/work/askeeters/HSCPStudy/HSCP_Analyzers/ :tangle /sftp:austin.skeeters@cms07.hep.fsu.edu:/storage/6/work/askeeters/HSCPStudy/HSCP_Analyzers/test.cpp
-#+BEGIN_SRC cpp
-  #include <iostream>
-  using namespace std;
-
-  int main(void){
-
-    
-    return 0;
-  }
-#+END_SRC
-
 #+NAME: MC_Analyzer.cpp
-#+HEADERS: :dir /ssh:austin.skeeters@cms07.hep.fsu.edu:/storage/6/work/askeeters/HSCPStudy/HSCP_Analyzers/
+#+HEADERS: :dir /ssh:austin.skeeters@cms07.hep.fsu.edu:/storage/6/work/askeeters/HSCPStudy/HSCP_Analyzers/ :flags `root-config --cflags` :flags `root-config --glibs` :flags -lEG
 #+BEGIN_SRC cpp 
-  #include <iostream>
-  #include <sstream>
-  #include <string>
-  #include <cmath>
-  #include "TROOT.h"
-  #include "TFile.h"
-  #include "TH1.h"
-  #include "TGraph.h"
-  #include "TCanvas.h"
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <cmath>
+#include "TROOT.h"
+#include "TFile.h"
+#include "TH1.h"
+#include "TGraph.h"
+#include "TCanvas.h"
 
-  using namespace std;
+using namespace std;
 
-  /*Declare canvases for each plot*/
-  const unsigned int RECO = 0;
-  const unsigned int GEN = 1;
-  const unsigned int nTYPES = 2;
+/*Declare canvases for each plot*/
+const unsigned int RECO = 0;
+const unsigned int GEN = 1;
+const unsigned int BKG = 2;
+const unsigned int nTYPES = 3;
+//use static constants when calculating the number of masses and 
+//number of charges. Declare the corresponding constants here
 
-  //Declare distribution (histogram) Canvases
-  TCanvas *canv_BetaDist[nTYPES];
-  TCanvas *canv_EtaDist[nTYPES];
-  TCanvas *canv_GammaDist[nTYPES];
-  TCanvas *canv_IhDist[nTYPES];
-  TCanvas *canv_PDist[nTYPES];
-  TCanvas *canv_PhiDist[nTYPES];
-  TCanvas *canv_PtDist[nTYPES];
-  TCanvas *canv_TofDist[nTYPES];
+//Declare distribution (histogram) Canvases
+TCanvas *canv_BetaDist[nTYPES];
+TCanvas *canv_EtaDist[nTYPES];
+TCanvas *canv_GammaDist[nTYPES];
+TCanvas *canv_IhDist[nTYPES];
+TCanvas *canv_PDist[nTYPES];
+TCanvas *canv_PhiDist[nTYPES]; //azimuthal angle
+TCanvas *canv_PtDist[nTYPES];
+TCanvas *canv_ThetaDist[nTYPES]; //polar angle
+TCanvas *canv_TofDist[nTYPES];
+TCanvas *canv_TofTrelRatioDist[nTypes];
 
+//Graph (Scatter) Canvases (dep vs independent)
+TCanvas *canv_Ih_Vs_P[nTYPES];
+//one for given mass with varied charge colors
+//one for given charge with varied masses
+//for the following three distributions
+TCanvas *canv_Preco_Vs_Pgen[nCHARGE][nMASS];
+TCanvas *canv_Tofreco_Vs_Tofgen[nCHARGE][nMASS];
+TCanvas *canv_Ihreco_Vs_Ihgen[nCHARGE][nMASS];
 
-  //Graph (Scatter) Canvases (dep vs independent)
+/*Declare the corresponding distributions (TH1D)*/
 
-  /*Declare the corresponding distributions (TH1D)*/
+/*Function to insert available ROOT MC Sample files into a string array*/
 
+string *ListOfFiles(){
+  FILE *inStream;
+  char charnFiles[10];
+  char charFiles[10000];
+  stringstream streamnFiles;
+  
+  //First, count how many files we will be reading
+  if(!(inStream = popen("ls /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/Histos_mchamp*.root -l | wc -l", "r"))){
+    return 1;
+  }
+  
+  while(fgets(charnFiles, sizeof(charnFiles), inStream)!=NULL){
+    streamnFiles << charnFiles;
+  }
+  
+  unsigned int nFiles = atoi(streamnFiles.str().c_str());
+  pclose(inStream);
 
-  /*Function to parse a file name into mass and charge */
-
-  //Create a struct to allow returning both mass and charge
-  //as parsed from the file name
-  struct NameDat{
-    double charge = 0.0;
-    double mass = 0.0;
-  };
-
-  //Actual function that will parse the file name and return a NameDat struct
-  NameDat FileNameParser( const string &aName ){
-    NameDat outDat; //Struct that will contain the parsed mass and charge
-
-    //Loop through each character of the file name, increasing iCh.
-    //Increase iChunk at each chunk ('_' character)
-    //Store each chunk in a string array (chunks)
-    //Clean up the chunks of interest, and return the data in the struct
-    for (int iCh = 0, int iChunk = 0; iCh < aName.length(); iCh++){
-      //Assign the current character to a variable
-      char currChar = aName[iCh];
-      string chunks[4]; //string array that will contain the chunks
-      stringstream chunk; //stringstream object to contain pieced chunk
-      
-      if ( iCh == '_' ){
-        chunks[j] = chunk.str();
-        chunk = stringstream(string(""));
-        iChunk++;
-      }
-      else
-        chunk << currChar;
+  //Now we have the number of files, and can dynamicall allocate a string array for it.
+  string *listOfFiles = new string[nFiles];
+  int filePos = 0;
+  //Now we need to read in the list of files
+  //Will do something similar to the above, but using this method to get only the file names
+  stringstream popenStream;
+  popenStream << "find ./ -printf \"%f\`wn\"";
+  if(!(inStream = popen(popenStream.str().cstr()))){
+    return 1;
     }
-
-    //Same process as the above, but to clean the mass chunk
-    stringstream massStream;
-    for (int iCh = 0; iCh < chunks[3].length(); iCh++){
-      if ( chunks[3][iCh] == '.' )
-        break;
-      else
-        massStream << iCh;
+  while(fgets(charFiles, sizeof(charFiles), inStream)!=NULL){
+    if (charFiles != '\n')
+      popenStream << charFiles;
+    else{
+      listOfFiles[filePos] = popenStream.str();
+      popenStream.str(string());
+      filePos++;
     }
+  }
+  return listOfFiles;
+}
 
-    //Convert the strings to floats/doubles
-    outDat.charge = (double)atof(string(chunks[1],6).c_str());
-    outDat.mass = (double)atof(massStream.str().c_str());
-    return outDat;
+/*Function to parse a file name into mass and charge */
+//Create a struct to allow returning both mass and charge
+//as parsed from the file name
+struct NameDat{
+  double charge = 0.0;
+  double mass = 0.0;
+};
+
+//Actual function that will parse the file name and return a NameDat struct
+NameDat FileNameParser( const string &aName ){
+  NameDat outDat; //Struct that will contain the parsed mass and charge
+
+  //Loop through each character of the file name, increasing iCh.
+  //Increase iChunk at each chunk ('_' character)
+  //Store each chunk in a string array (chunks)
+  //Clean up the chunks of interest, and return the data in the struct
+  for (int iCh = 0, int iChunk = 0; iCh < aName.length(); iCh++){
+    //Assign the current character to a variable
+    char currChar = aName[iCh];
+    string chunks[4]; //string array that will contain the chunks
+    stringstream chunk; //stringstream object to contain pieced chunk
+    
+    if ( iCh == '_' ){
+      chunks[j] = chunk.str();
+      chunk = stringstream(string(""));
+      iChunk++;
+    }
+    else
+      chunk << currChar;
   }
 
-  /*Function to return a string array of all of the available MC files*/
-
-
-  /*Main*/
-  int main(void){
-    system("!source");
-    system("cd /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/");
-    TFile *outFile = new TFile(fname.c_str(),"RECREATE");
-    outFile.close();
-    return outFile;
-    return 0;
+  //Same process as the above, but to clean the mass chunk
+  stringstream massStream;
+  for (int iCh = 0; iCh < chunks[3].length(); iCh++){
+    if ( chunks[3][iCh] == '.' )
+      break;
+    else
+      massStream << iCh;
   }
+
+  //Convert the strings to floats/doubles
+  outDat.charge = (double)atof(string(chunks[1],6).c_str());
+  outDat.mass = (double)atof(massStream.str().c_str());
+  return outDat;
+}
+
+/*Function to return a string array of all of the available MC files*/
+
+
+/*Main*/
+int main(void){
+  system("!source");
+  system("cd /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/");
+  TFile *outFile = new TFile(fname.c_str(),"RECREATE");
+  outFile.close();
+  return outFile;
+  return 0;
+}
+
 #+END_SRC
 
 
 #+RESULTS:
 
+
+To compile and run the above program on cms07 at FSU, execute the
+following:
+#+NAME: MC_Analyzer Compiler
+#+HEADERS: :dir /ssh:austin.skeeters@cms07.hep.fsu.edu:/storage/6/work/askeeters/HSCPStudy/HSCP_Analyzers/ 
+#+BEGIN_SRC sh
+source ~/SETUPALL.sh
+cd /storage/6/work/askeeters/HSCPStudy/HSCP_Analyzers/
+g++ `root-config --cflags` MC_Analyzer.cpp `root-config --glibs` -lEG
+#+END_SRC
+
+#+RESULTS: MC_Analyzer
 
 * Playing around with org examples                                   :export:
 
