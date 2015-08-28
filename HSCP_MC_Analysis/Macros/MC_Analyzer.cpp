@@ -44,9 +44,13 @@ TCanvas *canv_Ih_Vs_P[nTYPES];
 
 /*Declare the corresponding distributions (TH1D)*/
 
-/*Function to insert available ROOT MC Sample files into a string array*/
+/*
+  Function to insert available ROOT MC Sample files into a string array.
+  Make the first entry in the array a string containing the number of 
+  entries in the array, INCLUDING this entry.
+*/
 
-string *ListOfFiles(){
+static string *ListOfFiles(){
   FILE *inStream;
   char charnFiles[10];
   char charFiles[10000];
@@ -54,37 +58,41 @@ string *ListOfFiles(){
   
   //First, count how many files we will be reading
   if(!(inStream = popen("ls /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/Histos_mchamp*.root -l | wc -l", "r"))){
-    cout << "Something went wrong listing and/or capturing the files" << endl;
+    exit(0);
   }
     
   while(fgets(charnFiles, sizeof(charnFiles), inStream)!=NULL){
     streamnFiles << charnFiles;
   }
-
-  unsigned int nFiles = atoi(streamnFiles.str().c_str());
-  cout << "There are " << nFiles << " files to be processed" << endl;
-  string *listOfFiles = new string[nFiles];
   pclose(inStream);
 
+  int nFiles = atoi(streamnFiles.str().c_str());
+  cout << "There are " << nFiles << " files to be processed" << endl << flush;
+  string *listOfFiles = new string[nFiles+1];
+
   //Now we have the number of files, and can dynamicall allocate a string array for it.
-  /*
-  int filePos = 0;
+  //PLUS the first entry containing the number of entries in the arary.
+  
+  listOfFiles[0] = streamnFiles.str();
+  
   //Now we need to read in the list of files
   //Will do something similar to the above, but using this method to get only the file names
-  stringstream popenStream;
-  popenStream << "find ./ -printf \"%f\`wn\"";
-  if(!(inStream = popen(popenStream.str().cstr()))){
-    return 1;
+  stringstream testStream;
+  if(!(inStream = popen("find /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/*.root -printf \"%f\n\"","r"))){
+    exit(0);
     }
   while(fgets(charFiles, sizeof(charFiles), inStream)!=NULL){
-    if (charFiles != '\n')
-      popenStream << charFiles;
-    else{
-      listOfFiles[filePos] = popenStream.str();
-      popenStream.str(string());
-      filePos++;
-    }
-  }*/
+    testStream << string(charFiles);
+  }
+  pclose(inStream);
+  
+  string line;
+  int fNum = 1;
+  while(getline(testStream,line)){
+    listOfFiles[fNum] = line;
+    fNum++;
+  }
+  
   return listOfFiles;
 }
 
@@ -139,11 +147,13 @@ NameDat FileNameParser( const string &aName ){
 
 /*Main*/
 int main(void){
-  system("!source");
-  system("cd /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/");
   TFile *outFile = new TFile("MC_Analysis.root","RECREATE");
   outFile->Close();
-
+  
   string *fileList = ListOfFiles();
+  int numFiles = atoi(fileList[0].c_str());
+  for(int i=1; i<numFiles; i++){
+    cout << fileList[i] << endl;
+  }
   return 0;
 }
