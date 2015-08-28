@@ -1,4 +1,5 @@
 
+#include <cstddef> //size_t
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -7,6 +8,8 @@
 #include <cmath>
 #include "TROOT.h"
 #include "TFile.h"
+#include "TTree.h"
+#include "TBranch.h"
 #include "TH1.h"
 #include "TGraph.h"
 #include "TCanvas.h"
@@ -67,7 +70,6 @@ static string *ListOfFiles(){
   pclose(inStream);
 
   int nFiles = atoi(streamnFiles.str().c_str());
-  cout << "There are " << nFiles << " files to be processed" << endl << flush;
   string *listOfFiles = new string[nFiles+1];
 
   //Now we have the number of files, and can dynamicall allocate a string array for it.
@@ -80,7 +82,7 @@ static string *ListOfFiles(){
   stringstream testStream;
   if(!(inStream = popen("find /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/*.root -printf \"%f\n\"","r"))){
     exit(0);
-    }
+  }
   while(fgets(charFiles, sizeof(charFiles), inStream)!=NULL){
     testStream << string(charFiles);
   }
@@ -100,60 +102,59 @@ static string *ListOfFiles(){
 //Create a struct to allow returning both mass and charge
 //as parsed from the file name
 struct NameDat{
-  double charge;
-  double mass;
+  double *charge;
+  double *mass;
+  string *fileNames;
 };
 
 //Actual function that will parse the file name and return a NameDat struct
-NameDat FileNameParser( const string &aName ){
-  NameDat outDat; //Struct that will contain the parsed mass and charge
-  string chunks[4]; //string array that will contain the chunks
-  //Loop through each character of the file name, increasing iCh.
-  //Increase iChunk at each chunk ('_' character)
-  //Store each chunk in a string array (chunks)
-  //Clean up the chunks of interest, and return the data in the struct
+static NameDat *FileNameParser( string *Names, const int nFiles ){
+  NameDat *outDat = new NameDat; //Struct that will contain the parsed mass and charge
+  outDat->charge = new double[nFiles];
+  outDat->mass = new double[nFiles];
+  outDat->fileNames = &Names[1];
+  
+  //the one comes from the fact that the file
+  //name array has the number of files as the
+  //first character
+  for(int iFile = 0; iFile < nFiles; iFile++){
+    string aName = outDat->fileNames[iFile];
+    string chunks[4]; //string array that will contain the chunks
+    //Loop through each character of the file name, increasing iCh.
+    //Increase iChunk at each chunk ('_' character)
+    //Store each chunk in a string array (chunks)
+    //Clean up the chunks of interest, and return the data in the struct
+    size_t found = aName.find_first_of("_");
     
-  for (int iCh = 0, iChunk = 0; iCh < aName.length(); iCh++){
-    //Assign the current character to a variable
-    char currChar = aName[iCh];
-    stringstream chunk; //stringstream object to contain pieced chunk
-      
-    if ( currChar == '_' ){
-      chunks[iChunk] = chunk.str();
-      chunk.str(string(""));
-      iChunk++;
+    chunks[0] = aName.substr(0,found);
+    int chunkPos = 1;
+    while( found != string::npos ){
+      chunks[chunkPos] = aName.substr(found+1,aName.find_first_of('_',found+1)-found-1);
+      found = aName.find_first_of('_',found+1);
+      chunkPos++;
     }
-    else
-      chunk << currChar;
-  }
+    //Charge is in chunk 1, mass in chunk index 3
+    //Clean the mass and charge chunks.
+    string charge = chunks[1].substr(chunks[1].find_first_not_of("mchamp"),string::npos);
+    string mass = chunks[3].substr(0,chunks[3].find_first_of(".root"));
 
-  //Same process as the above, but to clean the mass chunk
-  stringstream massStream;
-  for (int iCh = 0; iCh < chunks[3].length(); iCh++){
-    if ( chunks[3].at(iCh) == '.' )
-      break;
-    else
-      massStream << iCh;
+    //Convert the strings to floats/doubles
+    outDat->charge[iFile] = atof(charge.c_str())/3.0;
+    outDat->mass[iFile] = atof(mass.c_str());
   }
-
-  //Convert the strings to floats/doubles
-  outDat.charge = (double)atof(string(chunks[1],6).c_str());
-  outDat.mass = (double)atof(massStream.str().c_str());
+  
   return outDat;
 }
-
-/*Function to return a string array of all of the available MC files*/
 
 
 /*Main*/
 int main(void){
-  TFile *outFile = new TFile("MC_Analysis.root","RECREATE");
-  outFile->Close();
-  
+  //TFile *outFile = new TFile("MC_Analysis.root","RECREATE");
+  //outFile->Close();
   string *fileList = ListOfFiles();
   int numFiles = atoi(fileList[0].c_str());
-  for(int i=1; i<numFiles; i++){
-    cout << fileList[i] << endl;
-  }
+  NameDat *fileNameData = FileNameParser( fileList, numFiles );
+  
+  
   return 0;
 }
