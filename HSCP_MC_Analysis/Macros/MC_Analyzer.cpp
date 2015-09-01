@@ -6,6 +6,9 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <map>
+#include <array>
+#include "format.h"
 #include "TROOT.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -21,20 +24,20 @@ const unsigned int RECO = 0;
 const unsigned int GEN = 1;
 const unsigned int BKG = 2;
 const unsigned int nTYPES = 3;
-//use static constants when calculating the number of masses and 
-//number of charges. Declare the corresponding constants here
 
-//Declare distribution (histogram) Canvases
-TCanvas *canv_BetaDist[nTYPES];
-TCanvas *canv_EtaDist[nTYPES];
-TCanvas *canv_GammaDist[nTYPES];
-TCanvas *canv_IhDist[nTYPES];
-TCanvas *canv_PDist[nTYPES];
-TCanvas *canv_PhiDist[nTYPES]; //azimuthal angle
-TCanvas *canv_PtDist[nTYPES];
-TCanvas *canv_ThetaDist[nTYPES]; //polar angle
-TCanvas *canv_TofDist[nTYPES];
-TCanvas *canv_TofTrelRatioDist[nTYPES];
+//Create a map of canvases corresponding to each mass and charge
+//A map with masses as key which has a value of a map of charges
+//with charges as key and canvas as value
+map< double,map<double,TCanvas> > canv_BetaDist;
+map< double,map<double,TCanvas> > canv_EtaDist;
+map< double,map<double,TCanvas> > canv_GammaDist;
+map< double,map<double,TCanvas> > canv_IhDist;
+map< double,map<double,TCanvas> > canv_PDist;
+map< double,map<double,TCanvas> > canv_PhiDist; //azimuthal angle
+map< double,map<double,TCanvas> > canv_PtDist;
+map< double,map<double,TCanvas> > canv_ThetaDist; //polar angle
+map< double,map<double,TCanvas> > canv_TofDist;
+map< double,map<double,TCanvas> > canv_TofTrelRatioDist;
 
 //Graph (Scatter) Canvases (dep vs independent)
 TCanvas *canv_Ih_Vs_P[nTYPES];
@@ -105,6 +108,8 @@ struct NameDat{
   double *charge;
   double *mass;
   string *fileNames;
+  map<double,int> chargeCounts;
+  map<double,int> massCounts;
 };
 
 //Actual function that will parse the file name and return a NameDat struct
@@ -143,18 +148,97 @@ static NameDat *FileNameParser( string *Names, const int nFiles ){
     outDat->mass[iFile] = atof(mass.c_str());
   }
   
+  map<double, int> massCounts;
+  map<double, int> chargeCounts;
+  
+  //Count the masses
+  for( int iMass = 0; iMass < nFiles; iMass++ ){
+    if( !massCounts.insert( make_pair(outDat->mass[iMass], 1 ) ).second ){
+      //Element is alread present. Need to increment the count
+      massCounts[outDat->mass[iMass]] += 1;
+    }
+  }
+
+  //Count the charges
+  for( int iCharge = 0; iCharge < nFiles; iCharge++ ){
+    if( !chargeCounts.insert( make_pair(outDat->charge[iCharge], 1 ) ).second ){
+      //Element is alread present. Need to increment the count
+      chargeCounts[outDat->charge[iCharge]] += 1;
+    }
+  }
+
+  outDat->chargeCounts = chargeCounts;
+  outDat->massCounts = massCounts;
   return outDat;
 }
 
 
 /*Main*/
 int main(void){
-  //TFile *outFile = new TFile("MC_Analysis.root","RECREATE");
-  //outFile->Close();
-  string *fileList = ListOfFiles();
+  string *fileList = ListOfFiles(); 
+
+  //Total number of files to be processed
   int numFiles = atoi(fileList[0].c_str());
+
   NameDat *fileNameData = FileNameParser( fileList, numFiles );
+
+  //Arrays of the charges and masses associated with each file
+  double *masses = fileNameData->mass;
+  double *charges = fileNameData->charge;
+
+  //List of the names of the files to be opened
+  fileList = fileNameData->fileNames; //Can index from 0 now
+ 
+  //Number of each charge and each mass
+  map<double,int> *chargeCounts = &fileNameData->chargeCounts;
+  map<double,int> *massCounts = &fileNameData->chargeCounts;
+
+
+  //Pointer for the current file
+  TFile *datFile;
+
+  //Pointers for the various branches
+  TTree *tree_Event; //Event number
+  TTree *tree_Hscp; //Type of HSCP
+  TTree *tree_Pt;
+  TTree *tree_I;
+  TTree *tree_Ih;
+  TTree *tree_TOF;
+  TTree *tree_Mass;
+  TTree *tree_dZ;
+  TTree *tree_dXY;
+  TTree *tree_dR;
+  TTree *tree_eta;
+  TTree *tree_phi;
+  TTree *tree_hasMuon;
   
+  TTree *tree;
+  const int LARGENUM = 5000;
   
+  int event;
+  //Loop over the files
+  for( int iFile = 0; iFile < numFiles; iFile++ ){
+    string file = "/storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/";
+    file += fileList[iFile];
+    datFile = new TFile(file.c_str()); //Open the current file
+
+    //Create a string for the appropriate file directory
+    ///storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files
+    string mcDir(fmt::format("mchamp{}_M_{}/HscpCandidates",3*charges[iFile],masses[iFile]));
+    
+    //Set the appropriate branches for the MC particles
+    tree = (TTree*)datFile->Get(mcDir.c_str());
+    
+    tree->SetBranchAddress("Event", &event);
+      
+    //Loop over the events
+    for(int iEvt = 0; iEvt < tree->GetEntriesFast(); iEvt++){
+      tree->GetEntry(iEvt);
+      cout << event << endl;
+    }
+
+    datFile->Close();
+    
+  }//end file loop
   return 0;
 }
