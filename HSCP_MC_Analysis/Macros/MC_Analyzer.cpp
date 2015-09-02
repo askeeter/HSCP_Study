@@ -197,25 +197,21 @@ int main(void){
   //Pointer for the current file
   TFile *datFile;
 
-  //Pointers for the various branches
-  TTree *tree_Event; //Event number
-  TTree *tree_Hscp; //Type of HSCP
-  TTree *tree_Pt;
-  TTree *tree_I;
-  TTree *tree_Ih;
-  TTree *tree_TOF;
-  TTree *tree_Mass;
-  TTree *tree_dZ;
-  TTree *tree_dXY;
-  TTree *tree_dR;
-  TTree *tree_eta;
-  TTree *tree_phi;
-  TTree *tree_hasMuon;
-  
+  //Pointer for the tree being read
   TTree *tree;
-  const int LARGENUM = 5000;
+ 
   
   int event;
+  int Hscp;
+  float Pt;
+  float I;
+  float Ih; //This is the energy deposition that we are interested in 
+  float TOF; 
+  float Mass; //Reco mass. Not correct. Assumes unit charge
+  float dZ, dXY, dR;
+  float eta, phi;
+  bool hasMuon;
+
   //Loop over the files
   for( int iFile = 0; iFile < numFiles; iFile++ ){
     string file = "/storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/";
@@ -230,11 +226,27 @@ int main(void){
     tree = (TTree*)datFile->Get(mcDir.c_str());
     
     tree->SetBranchAddress("Event", &event);
-      
+    tree->SetBranchAddress("Hscp", &Hscp);
+    tree->SetBranchAddress("Pt",&Pt);
+    tree->SetBranchAddress("I",&I);
+    tree->SetBranchAddress("Ih",&Ih);
+    tree->SetBranchAddress("TOF",&TOF);
+    tree->SetBranchAddress("Mass",&Mass);
+    tree->SetBranchAddress("dZ",&dZ);
+    tree->SetBranchAddress("dXY",&dXY);
+    tree->SetBranchAddress("dR",&dR);
+    tree->SetBranchAddress("eta",&eta);
+    tree->SetBranchAddress("phi",&phi);
+    tree->SetBranchAddress("hasMuon",&hasMuon);
+
     //Loop over the events
+    cout << file << endl;
+    cout << "Event\tPt\tIh\tMass\teta\tphi" << endl;
     for(int iEvt = 0; iEvt < tree->GetEntriesFast(); iEvt++){
       tree->GetEntry(iEvt);
-      cout << event << endl;
+      cout << event << '\t' << Pt << '\t' << Ih << '\t' << Mass << '\t' << eta << '\t' << phi << endl;
+
+      
     }
 
     datFile->Close();
