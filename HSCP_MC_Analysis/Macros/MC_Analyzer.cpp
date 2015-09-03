@@ -16,6 +16,8 @@
 #include "TH1.h"
 #include "TGraph.h"
 #include "TCanvas.h"
+#include "TMathBase.h"
+#include "TMath.h"
 
 using namespace std;
 
@@ -28,9 +30,10 @@ const unsigned int nTYPES = 3;
 //Create a map of canvases corresponding to each mass and charge
 //A map with masses as key which has a value of a map of charges
 //with charges as key and canvas as value
-map< double,map<double,TCanvas> > canv_BetaDist;
+// [gen/reco][charge][mass]
+map< string,map< double,map< double ,TCanvas > > > canv_BetaDist;//Pc/E
 map< double,map<double,TCanvas> > canv_EtaDist;
-map< double,map<double,TCanvas> > canv_GammaDist;
+map< double,map<double,TCanvas> > canv_GammaDist;//1/sqrt(a-beta^2)
 map< double,map<double,TCanvas> > canv_IhDist;
 map< double,map<double,TCanvas> > canv_PDist;
 map< double,map<double,TCanvas> > canv_PhiDist; //azimuthal angle
@@ -203,13 +206,13 @@ int main(void){
   
   int event;
   int Hscp;
-  float Pt;
+  float Pt, P;
   float I;
   float Ih; //This is the energy deposition that we are interested in 
   float TOF; 
   float Mass; //Reco mass. Not correct. Assumes unit charge
   float dZ, dXY, dR;
-  float eta, phi;
+  float eta, phi, theta;
   bool hasMuon;
 
   //Loop over the files
@@ -241,12 +244,17 @@ int main(void){
 
     //Loop over the events
     cout << file << endl;
-    cout << "Event\tPt\tIh\tMass\teta\tphi" << endl;
+    cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", "event", "Pt(GeV)", "Ih(MeV/cm)", "Mass(GeV)", "eta", "phi", "theta(deg)") << endl;
     for(int iEvt = 0; iEvt < tree->GetEntriesFast(); iEvt++){
       tree->GetEntry(iEvt);
-      cout << event << '\t' << Pt << '\t' << Ih << '\t' << Mass << '\t' << eta << '\t' << phi << endl;
-
       
+      //Calculate theta
+      theta = 2*TMath::ATan( TMath::Exp( -1 * eta ) );
+
+      //Calculate Momentum from transverse and theta (rad)
+      P = Pt / TMath::Sin(theta);
+      
+      cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", event, Pt, Ih, Mass, eta, phi, theta*180.0/TMath::Pi())<< endl;
     }
 
     datFile->Close();
