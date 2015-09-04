@@ -27,23 +27,31 @@ const unsigned int GEN = 1;
 const unsigned int BKG = 2;
 const unsigned int nTYPES = 3;
 
+struct distObjects{
+  TCanvas* canvas;
+  TH1F* distribution;
+};
 //Create a map of canvases corresponding to each mass and charge
 //A map with masses as key which has a value of a map of charges
 //with charges as key and canvas as value
-// [gen/reco][charge][mass]
-map< string,map< double,map< double ,TCanvas > > > canv_BetaDist;//Pc/E
-map< double,map<double,TCanvas> > canv_EtaDist;
-map< double,map<double,TCanvas> > canv_GammaDist;//1/sqrt(a-beta^2)
-map< double,map<double,TCanvas> > canv_IhDist;
-map< double,map<double,TCanvas> > canv_PDist;
-map< double,map<double,TCanvas> > canv_PhiDist; //azimuthal angle
-map< double,map<double,TCanvas> > canv_PtDist;
-map< double,map<double,TCanvas> > canv_ThetaDist; //polar angle
-map< double,map<double,TCanvas> > canv_TofDist;
-map< double,map<double,TCanvas> > canv_TofTrelRatioDist;
+// ["gen"/"reco"][(double)charge][(double)mass] blah->canvas->TCanvas or blah->distribution->TH1F
+typedef map< string,map< double,map< double ,distObjects* > > > distMap;
+
+distMap BetaDist;
+distMap EtaDist;
+distMap EDist;
+distMap GammaDist;//1/sqrt(a-beta^2)
+distMap IhDist;
+distMap PDist;
+distMap PhiDist; //azimuthal angle
+distMap PtDist;
+distMap ThetaDist; //polar angle
+distMap TofDist;
+distMap TofTrelRatioDist;
+
 
 //Graph (Scatter) Canvases (dep vs independent)
-TCanvas *canv_Ih_Vs_P[nTYPES];
+//TCanvas *canv_Ih_Vs_P[nTYPES];
 //one for given mass with varied charge colors
 //one for given charge with varied masses
 //for the following three distributions
@@ -196,7 +204,15 @@ int main(void){
   map<double,int> *chargeCounts = &fileNameData->chargeCounts;
   map<double,int> *massCounts = &fileNameData->chargeCounts;
 
+  TCanvas *currCanv = NULL;
+  TH1F *currHist = NULL;
+  //Add the appropriate canvases to the map and initiate them
+  for( int iFile = 0; iFile < numFiles; iFile++ ){
+    currCanv = BetaDist["reco"][charges[iFile]][masses[iFile]]->canvas;
+    currCanv = new TCanvas("beta","beta",500,500);
+  }
 
+  
   //Pointer for the current file
   TFile *datFile;
 
@@ -206,6 +222,7 @@ int main(void){
   
   int event;
   int Hscp;
+  float E;
   float Pt, P;
   float I;
   float Ih; //This is the energy deposition that we are interested in 
@@ -243,8 +260,8 @@ int main(void){
     tree->SetBranchAddress("hasMuon",&hasMuon);
 
     //Loop over the events
-    cout << file << endl;
-    cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", "event", "Pt(GeV)", "Ih(MeV/cm)", "Mass(GeV)", "eta", "phi", "theta(deg)") << endl;
+    //cout << file << endl;
+    //cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", "event", "Pt(GeV)", "Ih(MeV/cm)", "Mass(GeV)", "eta", "phi", "theta(deg)","E") << endl;
     for(int iEvt = 0; iEvt < tree->GetEntriesFast(); iEvt++){
       tree->GetEntry(iEvt);
       
@@ -254,7 +271,10 @@ int main(void){
       //Calculate Momentum from transverse and theta (rad)
       P = Pt / TMath::Sin(theta);
       
-      cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", event, Pt, Ih, Mass, eta, phi, theta*180.0/TMath::Pi())<< endl;
+      //Calculate the relativistic energy
+      E = TMath::Sqrt( P*P + masses[iFile] );
+      
+      //cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", event, Pt, Ih, Mass, eta, phi, theta*180.0/TMath::Pi(), E)<< endl;
     }
 
     datFile->Close();
