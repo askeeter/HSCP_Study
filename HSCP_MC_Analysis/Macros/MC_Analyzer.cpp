@@ -7,9 +7,10 @@
 #include <string>
 #include <cmath>
 #include <map>
+#include <vector>
 #include <array>
 #include "format.h"
-#include "TROOT.h"
+#include "TROOT.h" //for gROOT
 #include "TFile.h"
 #include "TTree.h"
 #include "TBranch.h"
@@ -18,8 +19,13 @@
 #include "TCanvas.h"
 #include "TMathBase.h"
 #include "TMath.h"
+#include "TNetFile.h"
+#include "TAuthenticate.h"
+#include "TObject.h"
+#include "TApplication.h"
 
 using namespace std;
+
 
 /*Declare canvases for each plot*/
 const unsigned int RECO = 0;
@@ -28,30 +34,50 @@ const unsigned int BKG = 2;
 const unsigned int nTYPES = 3;
 
 struct distObjects{
-  TCanvas* canvas;
-  TH1F* distribution;
+  TCanvas *canvas;
+  TH1F *distribution;
+  distObjects() : canvas(NULL), distribution(NULL) {}
+  distObjects(const distObjects &arg) : canvas(arg.canvas), distribution(arg.distribution) {}
+  distObjects(TCanvas *&aCanv, TH1F *&aDist) : canvas(aCanv), distribution(aDist) {}
 };
-//Create a map of canvases corresponding to each mass and charge
-//A map with masses as key which has a value of a map of charges
-//with charges as key and canvas as value
-// ["gen"/"reco"][(double)charge][(double)mass] blah->canvas->TCanvas or blah->distribution->TH1F
-typedef map< string,map< double,map< double ,distObjects* > > > distMap;
 
-distMap BetaDist;
-distMap EtaDist;
-distMap EDist;
-distMap GammaDist;//1/sqrt(a-beta^2)
-distMap IhDist;
-distMap PDist;
-distMap PhiDist; //azimuthal angle
-distMap PtDist;
-distMap ThetaDist; //polar angle
-distMap TofDist;
-distMap TofTrelRatioDist;
+class Key{
+public:
+  Key(int charge,int mass,int ID){
+    this->charge = charge;
+    this->mass = mass;
+    this->ID = ID;
+  }
+  int charge;
+  int mass;
+  int ID;
+  
+  bool operator<(const Key &k) const{
+    return (this->ID < k.ID);
+  }
+  bool operator==(const Key &rhs){
+    return this->charge == rhs.charge && this->mass == rhs.mass && this->ID == rhs.ID;
+  }
+  
+};
 
+//Create a map of canvases and histoscorresponding to each mass and charge
+//typedef map< Key, distObjects > distMap;
+typedef map< Key, pair<TCanvas*, TH1F*> > distMap;
+
+// distMap EtaDist;
+// distMap EDist;
+
+// distMap IhDist;
+// distMap PDist;
+// distMap PhiDist; //azimuthal angle
+// distMap PtDist;
+// distMap ThetaDist; //polar angle
+// distMap TofDist;
+// distMap TofTrelRatioDist;
 
 //Graph (Scatter) Canvases (dep vs independent)
-//TCanvas *canv_Ih_Vs_P[nTYPES];
+//TCanvas *canv_Ih_Vs_P[nTYPESS];
 //one for given mass with varied charge colors
 //one for given charge with varied masses
 //for the following three distributions
@@ -74,7 +100,7 @@ static string *ListOfFiles(){
   stringstream streamnFiles;
   
   //First, count how many files we will be reading
-  if(!(inStream = popen("ls /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/Histos_mchamp*.root -l | wc -l", "r"))){
+  if(!(inStream = popen("ls /home/austin/HSCP_Study/HSCP_MC_Files/*.root -l | wc -l", "r"))){
     exit(0);
   }
     
@@ -84,6 +110,7 @@ static string *ListOfFiles(){
   pclose(inStream);
 
   int nFiles = atoi(streamnFiles.str().c_str());
+  //cout << "nFiles form function: " << nFiles << endl;
   string *listOfFiles = new string[nFiles+1];
 
   //Now we have the number of files, and can dynamicall allocate a string array for it.
@@ -94,7 +121,7 @@ static string *ListOfFiles(){
   //Now we need to read in the list of files
   //Will do something similar to the above, but using this method to get only the file names
   stringstream testStream;
-  if(!(inStream = popen("find /storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/*.root -printf \"%f\n\"","r"))){
+  if(!(inStream = popen("find /home/austin/HSCP_Study/HSCP_MC_Files/*.root -printf \"%f\n\"","r"))){
     exit(0);
   }
   while(fgets(charFiles, sizeof(charFiles), inStream)!=NULL){
@@ -128,7 +155,7 @@ static NameDat *FileNameParser( string *Names, const int nFiles ){
   NameDat *outDat = new NameDat; //Struct that will contain the parsed mass and charge
   outDat->charge = new double[nFiles];
   outDat->mass = new double[nFiles];
-  outDat->fileNames = &Names[1];
+  outDat->fileNames = Names+1;
   
   //the one comes from the fact that the file
   //name array has the number of files as the
@@ -183,45 +210,52 @@ static NameDat *FileNameParser( string *Names, const int nFiles ){
   return outDat;
 }
 
-
 /*Main*/
-int main(void){
+int main(int argc, char **argv){
+  TApplication theApp("App",&argc,argv);
+  //gROOT->SetBatch(kTRUE); //Don't draw things when created. 
   string *fileList = ListOfFiles(); 
 
   //Total number of files to be processed
   int numFiles = atoi(fileList[0].c_str());
 
   NameDat *fileNameData = FileNameParser( fileList, numFiles );
-
+  
   //Arrays of the charges and masses associated with each file
   double *masses = fileNameData->mass;
-  double *charges = fileNameData->charge;
+  double *charges = fileNameData->charge; //These are the ACTUAL charges
 
   //List of the names of the files to be opened
   fileList = fileNameData->fileNames; //Can index from 0 now
- 
-  //Number of each charge and each mass
-  map<double,int> *chargeCounts = &fileNameData->chargeCounts;
-  map<double,int> *massCounts = &fileNameData->chargeCounts;
-
-  TCanvas *currCanv = NULL;
-  TH1F *currHist = NULL;
-  //Add the appropriate canvases to the map and initiate them
-  for( int iFile = 0; iFile < numFiles; iFile++ ){
-    currCanv = BetaDist["reco"][charges[iFile]][masses[iFile]]->canvas;
-    currCanv = new TCanvas("beta","beta",500,500);
-  }
-
   
-  //Pointer for the current file
-  TFile *datFile;
+  // //Number of each charge and each mass
+  map<double,int> chargeCounts = fileNameData->chargeCounts;
+  map<double,int> massCounts = fileNameData->chargeCounts;
+  
+  // //Add the appropriate canvases to the map and initiate them
+  //TCanvas*, TH1F*
+  distMap BetaDist;
+  distMap GammaDist;//1/sqrt(a-beta^2)
+  
+  TCanvas tempCanv;
+  TH1F tempDist;
+  
+  for( int iFile = 0; iFile < numFiles; iFile++ ){
+    double *charge = &charges[iFile];
+    double *mass = &masses[iFile];
+    string name = fmt::format("beta_{}_{}",3 * *charge,*mass);
+    Key entryKey ( (int)(3* *charge), (int)*mass, iFile );
+    
+    BetaDist.emplace(entryKey, pair<TCanvas*,TH1F*>(new TCanvas(name.c_str(),name.c_str(),500,500), new TH1F(name.c_str(),name.c_str(),200,0,2)));
+
+    name = fmt::format("#gamma_{}_{}",3 * *charge,*mass);
+    GammaDist.emplace(entryKey, pair<TCanvas*,TH1F*>(new TCanvas(name.c_str(),name.c_str(),500,500), new TH1F(name.c_str(),name.c_str(),200,0,2)));
+  }
 
   //Pointer for the tree being read
   TTree *tree;
- 
-  
-  int event;
-  int Hscp;
+  unsigned int event;
+  unsigned int Hscp;
   float E;
   float Pt, P;
   float I;
@@ -230,17 +264,24 @@ int main(void){
   float Mass; //Reco mass. Not correct. Assumes unit charge
   float dZ, dXY, dR;
   float eta, phi, theta;
+  float beta, gamma;
   bool hasMuon;
 
   //Loop over the files
   for( int iFile = 0; iFile < numFiles; iFile++ ){
-    string file = "/storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files/";
+    string file = "/home/austin/HSCP_Study/HSCP_MC_Files/";
     file += fileList[iFile];
-    datFile = new TFile(file.c_str()); //Open the current file
+    TFile *datFile = new TFile(file.c_str(), "READ"); //Open the current file
 
+    double *charge = &charges[iFile];
+    double *mass = &masses[iFile];
+    Key entryKey ( (int)(3* *charge), (int)*mass, iFile );
     //Create a string for the appropriate file directory
     ///storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files
     string mcDir(fmt::format("mchamp{}_M_{}/HscpCandidates",3*charges[iFile],masses[iFile]));
+
+    //Key accessKey ((int)(3 * *charge),(int)*mass, iFile);
+    //cout << &BetaDist[accessKey].second << endl;
     
     //Set the appropriate branches for the MC particles
     tree = (TTree*)datFile->Get(mcDir.c_str());
@@ -260,9 +301,8 @@ int main(void){
     tree->SetBranchAddress("hasMuon",&hasMuon);
 
     //Loop over the events
-    //cout << file << endl;
     //cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", "event", "Pt(GeV)", "Ih(MeV/cm)", "Mass(GeV)", "eta", "phi", "theta(deg)","E") << endl;
-    for(int iEvt = 0; iEvt < tree->GetEntriesFast(); iEvt++){
+    for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
       tree->GetEntry(iEvt);
       
       //Calculate theta
@@ -273,12 +313,46 @@ int main(void){
       
       //Calculate the relativistic energy
       E = TMath::Sqrt( P*P + masses[iFile] );
-      
-      //cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", event, Pt, Ih, Mass, eta, phi, theta*180.0/TMath::Pi(), E)<< endl;
-    }
 
-    datFile->Close();
-    
+      //Calculate beta
+      beta = P / E;
+      //Fill beta distribution
+      auto it = BetaDist.find(entryKey);
+      it->second.second->Fill(beta);
+
+      //Calculate gamma
+      gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
+      //Fill the gamma distribution
+      it = GammaDist.find(entryKey);
+      it->second.second->Fill(gamma);
+      
+    }//end event loop
   }//end file loop
+
+  //Loop through all available distributions, writing them to the disc.
+  TCanvas *currCanv;
+  TH1F *currDist;
+  double norm = 1;
+  // for(const auto &it : BetaDist){
+  //   currCanv = it.second.first;
+  //   currDist = it.second.second;
+  //   currDist->Scale(norm/currDist->Integral("width"));
+  //   currCanv->cd();
+  //   currDist->Draw();
+  //   currCanv->Update();
+  //   currCanv->Draw();
+  // }
+
+  for(const auto &it : GammaDist){
+    currCanv = it.second.first;
+    currDist = it.second.second;
+    currDist->Scale(norm/currDist->Integral("width"));
+    currCanv->cd();
+    currDist->Draw();
+    currCanv->Update();
+    currCanv->Draw();
+  }
+  
+  theApp.Run();
   return 0;
 }
