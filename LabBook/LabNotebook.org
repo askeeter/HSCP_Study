@@ -662,7 +662,7 @@ The two snippets below allow the macro to be saved to two locations:
 one local, and one on the CMS computers, where it will be compiled.
 
 
-#+HEADERS: :tangle ~/HSCP_Study/HSCP_MC_Analysis/Macros/MC_Analyzer.cpp :noweb tangle
+blah#+HEADERS: :tangle ~/HSCP_Study/HSCP_MC_Analysis/Macros/MC_Analyzer.cpp :noweb tangle
 #+BEGIN_SRC cpp
 <<MC_Analyzer.cpp>>
 #+END_SRC
@@ -682,91 +682,83 @@ one local, and one on the CMS computers, where it will be compiled.
 #include <string>
 #include <cmath>
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <array>
+#include <iterator>
 #include "format.h"
-#include "TROOT.h" //for gROOT
-#include "TFile.h"
-#include "TTree.h"
-#include "TBranch.h"
-#include "TH1.h"
-#include "TGraph.h"
-#include "TCanvas.h"
-#include "TMathBase.h"
-#include "TMath.h"
-#include "TNetFile.h"
-#include "TAuthenticate.h"
-#include "TObject.h"
-#include "TApplication.h"
+#include <TROOT.h> //for gROOT
+#include <TFile.h>
+#include <TTree.h>
+#include <TBranch.h>
+#include <TH1.h>
+#include <TGraph.h>
+#include <TCanvas.h>
+#include <TMathBase.h>
+#include <TMath.h>
+#include <TNetFile.h>
+#include <TAuthenticate.h>
+#include <TObject.h>
+#include <TApplication.h>
+#include <TNamed.h>
 
 using namespace std;
+  
+class Key{
+public:
+  Key(string dist,string type,int charge,int mass){
+    this->dist = dist;
+    this->charge = charge;
+    this->mass = mass;
+    this->type = type;
+    this->name = fmt::format("{}_{}_{}_{}",type,dist,charge,mass);
+  }
 
-
-/*Declare canvases for each plot*/
-const unsigned int RECO = 0;
-const unsigned int GEN = 1;
-const unsigned int BKG = 2;
-const unsigned int nTYPES = 3;
+  string dist;
+  string type;
+  int charge;
+  int mass;
+  string name;
+  
+  bool operator<(const Key &k) const{
+    return (this->name<k.name);
+  }
+  
+  bool operator==(const Key &rhs){
+    return this->dist == rhs.dist && this->charge == rhs.charge && this->mass == rhs.mass && this->type == rhs.type;
+  }
+  
+};
 
 struct distObjects{
   TCanvas *canvas;
   TH1F *distribution;
   distObjects() : canvas(NULL), distribution(NULL) {}
   distObjects(const distObjects &arg) : canvas(arg.canvas), distribution(arg.distribution) {}
-  distObjects(TCanvas *&aCanv, TH1F *&aDist) : canvas(aCanv), distribution(aDist) {}
+  distObjects(TCanvas *&aCanv, TH1F *&aDist) : canvas((TCanvas*)aCanv->Clone()), distribution((TH1F*)aDist->Clone()) {}
 };
 
-class Key{
-public:
-  Key(int charge,int mass,int ID){
-    this->charge = charge;
-    this->mass = mass;
-    this->ID = ID;
-  }
-  int charge;
-  int mass;
-  int ID;
-  
-  bool operator<(const Key &k) const{
-    return (this->ID < k.ID);
-  }
-  bool operator==(const Key &rhs){
-    return this->charge == rhs.charge && this->mass == rhs.mass && this->ID == rhs.ID;
-  }
-  
+typedef map<Key,distObjects> distMap;
+typedef pair<string,string> axes;
+typedef pair<double,double> limits;
+
+struct distProp{
+  limits axisLimits;
+  double nBins;
+  axes axisTitles;
 };
 
-//Create a map of canvases and histoscorresponding to each mass and charge
-//typedef map< Key, distObjects > distMap;
-typedef map< Key, pair<TCanvas*, TH1F*> > distMap;
+//typedef map< Key, pair<TCanvas, TH1F> > distMap;
 
-// distMap EtaDist;
-// distMap EDist;
-
-// distMap IhDist;
-// distMap PDist;
-// distMap PhiDist; //azimuthal angle
-// distMap PtDist;
-// distMap ThetaDist; //polar angle
-// distMap TofDist;
-// distMap TofTrelRatioDist;
-
-//Graph (Scatter) Canvases (dep vs independent)
-//TCanvas *canv_Ih_Vs_P[nTYPESS];
-//one for given mass with varied charge colors
-//one for given charge with varied masses
-//for the following three distributions
 // TCanvas *canv_Preco_Vs_Pgen[nCHARGE][nMASS];
 // TCanvas *canv_Tofreco_Vs_Tofgen[nCHARGE][nMASS];
 // TCanvas *canv_Ihreco_Vs_Ihgen[nCHARGE][nMASS];
-
-/*Declare the corresponding distributions (TH1D)*/
 
 /*
   Function to insert available ROOT MC Sample files into a string array.
   Make the first entry in the array a string containing the number of 
   entries in the array, INCLUDING this entry.
-,*/
+*/
 
 static string *ListOfFiles(){
   FILE *inStream;
@@ -885,10 +877,54 @@ static NameDat *FileNameParser( string *Names, const int nFiles ){
   return outDat;
 }
 
+
+//For each distribution type, go through all files (masses and charges)
+static void AllocateDistributions( distMap &argDists, const double *charges, const double *masses, const int &numFiles, const vector<string> &distNames, map<string,distProp> &distProps){
+  const string type = "Reco";
+  for (auto iNames = distNames.begin(); iNames != distNames.end(); ++iNames) {
+    double *lowerLim = &distProps[*iNames].axisLimits.first;
+    double *upperLim = &distProps[*iNames].axisLimits.second;
+    double *nBins = &distProps[*iNames].nBins;
+    string xAxis(distProps[*iNames].axisTitles.first);
+    string yAxis(distProps[*iNames].axisTitles.second);
+    
+    for (int iFile=0; iFile < numFiles; iFile++) {
+      Key entryKey (*iNames,type,(int)(3* charges[iFile]),(int)masses[iFile]);
+      
+      string canv_name = entryKey.name + "_canv";
+      string dist_name = entryKey.name + "_dist";
+
+      yAxis = fmt::format(yAxis.c_str(), (*upperLim-*lowerLim) / *nBins);
+      TCanvas *tempCanv = new TCanvas(canv_name.c_str(),canv_name.c_str(),500,500);
+      TH1F *tempHist = new TH1F(dist_name.c_str(),dist_name.c_str(),*nBins,*lowerLim,*upperLim);
+
+      tempHist->GetXaxis()->SetTitle(xAxis.c_str());
+      tempHist->GetYaxis()->SetTitle(yAxis.c_str());
+      argDists.emplace(entryKey,distObjects(tempCanv,tempHist));
+    }
+  }
+}
+
+static void AllocateOutfile( TFile *&aFile, const vector<string> &distNames ){
+  aFile->mkdir("Reco");
+  aFile->mkdir("Gen");
+  for (const auto &iNames : distNames) {
+    aFile->cd("Reco");
+    gDirectory->mkdir(iNames.c_str());
+    aFile->cd("Gen");
+    gDirectory->mkdir(iNames.c_str());
+  }
+  aFile->cd("/");
+}
+
 /*Main*/
 int main(int argc, char **argv){
-  TApplication theApp("App",&argc,argv);
-  //gROOT->SetBatch(kTRUE); //Don't draw things when created. 
+  //TApplication theApp("App",&argc,argv);
+
+  gROOT->SetStyle("Plain");
+  gROOT->ForceStyle();
+  gROOT->SetBatch(kTRUE); //Don't draw things when created.
+  
   string *fileList = ListOfFiles(); 
 
   //Total number of files to be processed
@@ -906,27 +942,39 @@ int main(int argc, char **argv){
   // //Number of each charge and each mass
   map<double,int> chargeCounts = fileNameData->chargeCounts;
   map<double,int> massCounts = fileNameData->chargeCounts;
-  
-  // //Add the appropriate canvases to the map and initiate them
-  //TCanvas*, TH1F*
-  distMap BetaDist;
-  distMap GammaDist;//1/sqrt(a-beta^2)
-  
-  TCanvas tempCanv;
-  TH1F tempDist;
-  
-  for( int iFile = 0; iFile < numFiles; iFile++ ){
-    double *charge = &charges[iFile];
-    double *mass = &masses[iFile];
-    string name = fmt::format("beta_{}_{}",3 * *charge,*mass);
-    Key entryKey ( (int)(3* *charge), (int)*mass, iFile );
-    
-    BetaDist.emplace(entryKey, pair<TCanvas*,TH1F*>(new TCanvas(name.c_str(),name.c_str(),500,500), new TH1F(name.c_str(),name.c_str(),200,0,2)));
 
-    name = fmt::format("#gamma_{}_{}",3 * *charge,*mass);
-    GammaDist.emplace(entryKey, pair<TCanvas*,TH1F*>(new TCanvas(name.c_str(),name.c_str(),500,500), new TH1F(name.c_str(),name.c_str(),200,0,2)));
-  }
+  distMap distList;
+  vector<string> distNames = {
+    "beta",
+    "energy",
+    "eta",
+    "gamma",
+    "Ih",
+    "momentum",
+    "phi",
+    "trans_momentum",
+    "theta",
+    "TOF",
+    "TOFdivTRel"
+  };
+  map<string,distProp> distProps = {
+    {"beta",{limits(0.9,1.0),200,axes("#beta","events/{}")}},
+    {"energy",{limits(0.9,1.0),200,axes("E [GeV]","events/{} GeV")}},
+    {"eta",{limits(0.9,1.0),200,axes("#eta", "events/{}")}},
+    {"gamma",{limits(0.9,1.0),200,axes("#gamma", "events/{}")}},
+    {"Ih",{limits(0.9,1.0),200,axes("I_{h} [MeV/cm]", "events/{} MeV/cm")}},
+    {"momentum",{limits(0.9,1.0),200,axes("P [GeV/c]", "events/{} GeV/c")}},
+    {"phi",{limits(0.9,1.0),200,axes("#phi [deg]", "events/{} deg")}},
+    {"trans_momentum",{limits(0.9,1.0),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
+    {"theta",{limits(0.9,1.0),200,axes("#theta [deg]", "events/{} deg")}},
+    {"TOF",{limits(0.9,1.0),200,axes("t [s]", "events/{} s")}},
+    {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_{r}}", "events/{}")}}
+  };
 
+  
+  AllocateDistributions(distList,charges,masses,numFiles,distNames,distProps);
+  
+  
   //Pointer for the tree being read
   TTree *tree;
   unsigned int event;
@@ -950,14 +998,11 @@ int main(int argc, char **argv){
 
     double *charge = &charges[iFile];
     double *mass = &masses[iFile];
-    Key entryKey ( (int)(3* *charge), (int)*mass, iFile );
+    string type = "Reco";
     //Create a string for the appropriate file directory
     ///storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files
     string mcDir(fmt::format("mchamp{}_M_{}/HscpCandidates",3*charges[iFile],masses[iFile]));
 
-    //Key accessKey ((int)(3 * *charge),(int)*mass, iFile);
-    //cout << &BetaDist[accessKey].second << endl;
-    
     //Set the appropriate branches for the MC particles
     tree = (TTree*)datFile->Get(mcDir.c_str());
     
@@ -974,7 +1019,7 @@ int main(int argc, char **argv){
     tree->SetBranchAddress("eta",&eta);
     tree->SetBranchAddress("phi",&phi);
     tree->SetBranchAddress("hasMuon",&hasMuon);
-
+    
     //Loop over the events
     //cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", "event", "Pt(GeV)", "Ih(MeV/cm)", "Mass(GeV)", "eta", "phi", "theta(deg)","E") << endl;
     for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
@@ -982,7 +1027,6 @@ int main(int argc, char **argv){
       
       //Calculate theta
       theta = 2*TMath::ATan( TMath::Exp( -1 * eta ) );
-
       //Calculate Momentum from transverse and theta (rad)
       P = Pt / TMath::Sin(theta);
       
@@ -992,43 +1036,53 @@ int main(int argc, char **argv){
       //Calculate beta
       beta = P / E;
       //Fill beta distribution
-      auto it = BetaDist.find(entryKey);
-      it->second.second->Fill(beta);
+      
+      Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
+      distList[betaKey].distribution->Fill(beta);
+      
 
       //Calculate gamma
       gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
+      
       //Fill the gamma distribution
-      it = GammaDist.find(entryKey);
-      it->second.second->Fill(gamma);
+      //fillIt = distList.find( "gamma" );
+      // fillIt->second.second.second->Fill(gamma);
+
       
     }//end event loop
+    datFile->Close();
   }//end file loop
-
+  
   //Loop through all available distributions, writing them to the disc.
   TCanvas *currCanv;
   TH1F *currDist;
   double norm = 1;
-  // for(const auto &it : BetaDist){
-  //   currCanv = it.second.first;
-  //   currDist = it.second.second;
-  //   currDist->Scale(norm/currDist->Integral("width"));
-  //   currCanv->cd();
-  //   currDist->Draw();
-  //   currCanv->Update();
-  //   currCanv->Draw();
-  // }
 
-  for(const auto &it : GammaDist){
-    currCanv = it.second.first;
-    currDist = it.second.second;
-    currDist->Scale(norm/currDist->Integral("width"));
-    currCanv->cd();
-    currDist->Draw();
-    currCanv->Update();
-    currCanv->Draw();
-  }
+  //Data output file
+  TFile *outFile = new TFile("HSCP_MC_Analysis.root","RECREATE");
+  //Set up the outfile to have a folder for each data type
+  AllocateOutfile(outFile, distNames);
   
-  theApp.Run();
+  //Loop through each distribution (eta,beta,gamma,etc)
+  outFile->cd("Reco");
+  for(const auto &distIt : distList){
+    string dir = string("Reco/") + distIt.first.dist;
+    outFile->cd(dir.c_str());
+    currDist = distIt.second.distribution;
+    currDist->Scale(norm/currDist->Integral("width"));
+    currDist->Write();
+    outFile->cd("/");
+  }
+
+  // for(const auto &distIt : GammaDist){
+  //   currDist = distIt.second.second;
+  //   currDist->Scale(norm/currDist->Integral("width"));
+  //   currDist->Write();
+  // }
+  
+  cout << "Finished writing to file" << endl;
+  outFile->Close();
+  //theApp.Run();
   return 0;
 }
 
