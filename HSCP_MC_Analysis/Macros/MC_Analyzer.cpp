@@ -25,6 +25,11 @@
 #include <TObject.h>
 #include <TApplication.h>
 #include <TNamed.h>
+#include <TStyle.h>
+#include <TAttLine.h>
+#include <TAttFill.h>
+#include <TAttMarker.h>
+#include <TAttText.h>
 
 using namespace std;
   
@@ -224,6 +229,9 @@ static void AllocateDistributions( distMap &argDists, const double *charges, con
 
       tempHist->GetXaxis()->SetTitle(xAxis.c_str());
       tempHist->GetYaxis()->SetTitle(yAxis.c_str());
+
+      //tempHist->SetLineWidth(2); //Better visibility
+      
       argDists.emplace(entryKey,distObjects(tempCanv,tempHist));
     }
   }
@@ -241,13 +249,47 @@ static void AllocateOutfile( TFile *&aFile, const vector<string> &distNames ){
   aFile->cd("/");
 }
 
+void SetRootStyle(){
+  //Useful Style Tips for ROOT
+  /*
+    http://www.nbi.dk/~petersen/Teaching/Stat2014/PythonRootIntro/ROOT_TipsAndTricks.pdf
+   */
+  TStyle *aStyle = new TStyle("aStyle","Austin's Root Style");
+  aStyle->SetPalette(1,0); //Get rid of terrible default color scheme
+  aStyle->SetOptStat(0);
+  aStyle->SetOptTitle(0);
+  aStyle->SetOptDate(0);
+  aStyle->SetLabelSize(0.03,"xyz"); //Axis value font size
+  aStyle->SetTitleSize(0.035,"xyz"); //Axis title font size
+  aStyle->SetLabelFont(22,"xyz");
+  aStyle->SetTitleOffset(1.2,"y");
+  //Default canvas options
+  aStyle->SetCanvasDefW(500);
+  aStyle->SetCanvasDefH(500);
+  aStyle->SetCanvasColor(0);
+  aStyle->SetCanvasBorderMode(0);
+  aStyle->SetPadBottomMargin(0.1);
+  aStyle->SetPadTopMargin(0.1);
+  aStyle->SetPadLeftMargin(0.1);
+  aStyle->SetPadRightMargin(0.1);
+  aStyle->SetPadGridX(0);
+  aStyle->SetPadGridY(0);
+  aStyle->SetPadTickX(1);
+  aStyle->SetPadTickY(1);
+  aStyle->SetFrameBorderMode(0);
+  aStyle->SetPaperSize(20,24); //US Letter
+  gROOT->SetStyle("aStyle");
+  gROOT->ForceStyle();
+}
+
 /*Main*/
 int main(int argc, char **argv){
   //TApplication theApp("App",&argc,argv);
 
-  gROOT->SetStyle("Plain");
-  gROOT->ForceStyle();
+  // gROOT->SetStyle("Pub");
+  SetRootStyle();
   gROOT->SetBatch(kTRUE); //Don't draw things when created.
+
   
   string *fileList = ListOfFiles(); 
 
@@ -279,20 +321,23 @@ int main(int argc, char **argv){
     "trans_momentum",
     "theta",
     "TOF",
-    "TOFdivTRel"
+    "TOFdivTRel",
+    "mass"
   };
+  
   map<string,distProp> distProps = {
     {"beta",{limits(0.9,1.0),200,axes("#beta","events/{}")}},
-    {"energy",{limits(0.9,1.0),200,axes("E [GeV]","events/{} GeV")}},
+    {"energy",{limits(0,2200),200,axes("E [GeV]","events/{} GeV")}},
     {"eta",{limits(0.9,1.0),200,axes("#eta", "events/{}")}},
-    {"gamma",{limits(0.9,1.0),200,axes("#gamma", "events/{}")}},
+    {"gamma",{limits(0,100.0),200,axes("#gamma", "events/{}")}},
     {"Ih",{limits(0.9,1.0),200,axes("I_{h} [MeV/cm]", "events/{} MeV/cm")}},
-    {"momentum",{limits(0.9,1.0),200,axes("P [GeV/c]", "events/{} GeV/c")}},
+    {"momentum",{limits(0.0,2000),200,axes("P [GeV/c]", "events/{} GeV/c")}},
     {"phi",{limits(0.9,1.0),200,axes("#phi [deg]", "events/{} deg")}},
     {"trans_momentum",{limits(0.9,1.0),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
-    {"theta",{limits(0.9,1.0),200,axes("#theta [deg]", "events/{} deg")}},
+    {"theta",{limits(0,180),180,axes("#theta [deg]", "events/{} deg")}},
     {"TOF",{limits(0.9,1.0),200,axes("t [s]", "events/{} s")}},
-    {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_{r}}", "events/{}")}}
+    {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_{r}}", "events/{}")}},
+    {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}}
   };
 
   
@@ -351,26 +396,35 @@ int main(int argc, char **argv){
       
       //Calculate theta
       theta = 2*TMath::ATan( TMath::Exp( -1 * eta ) );
+      //Fill the theta distribution
+      Key thetaKey (string("theta"), type, (int)(3* *charge), (int)*mass);
+      distList[thetaKey].distribution->Fill(theta * (180.0/TMath::Pi()));
+      
       //Calculate Momentum from transverse and theta (rad)
       P = Pt / TMath::Sin(theta);
+      //Fill momentum distribution
+      Key pKey (string("momentum"), type, (int)(3* *charge), (int)*mass);
+      distList[pKey].distribution->Fill(P);
       
       //Calculate the relativistic energy
-      E = TMath::Sqrt( P*P + masses[iFile] );
+      E = TMath::Sqrt( P*P + Mass*Mass );
+      //Fill the energy distribution
+      Key enKey (string("energy"), type, (int)(3* *charge), (int)*mass);
+      distList[enKey].distribution->Fill(E);
 
       //Calculate beta
       beta = P / E;
       //Fill beta distribution
-      
       Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
       distList[betaKey].distribution->Fill(beta);
       
 
       //Calculate gamma
       gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
-      
+
       //Fill the gamma distribution
-      //fillIt = distList.find( "gamma" );
-      // fillIt->second.second.second->Fill(gamma);
+      Key gammaKey (string("gamma"), type, (int)(3* *charge), (int)*mass);
+      distList[gammaKey].distribution->Fill(gamma);
 
       
     }//end event loop
