@@ -209,30 +209,31 @@ static NameDat *FileNameParser( string *Names, const int nFiles ){
 
 //For each distribution type, go through all files (masses and charges)
 static void AllocateDistributions( distMap &argDists, const double *charges, const double *masses, const int &numFiles, const vector<string> &distNames, map<string,distProp> &distProps){
-  const string type = "Reco";
-  for (auto iNames = distNames.begin(); iNames != distNames.end(); ++iNames) {
-    double *lowerLim = &distProps[*iNames].axisLimits.first;
-    double *upperLim = &distProps[*iNames].axisLimits.second;
-    double *nBins = &distProps[*iNames].nBins;
-    string xAxis(distProps[*iNames].axisTitles.first);
-    string yAxis(distProps[*iNames].axisTitles.second);
+  vector<string> types = {"Reco","Gen"};
+  //const string type = "Reco";
+  for( const auto &iType = types.begin(); iType != types.end(); ++iTypes ){
+    for (auto iNames = distNames.begin(); iNames != distNames.end(); ++iNames) {
+      double *lowerLim = &distProps[*iNames].axisLimits.first;
+      double *upperLim = &distProps[*iNames].axisLimits.second;
+      double *nBins = &distProps[*iNames].nBins;
+      string xAxis(distProps[*iNames].axisTitles.first);
+      string yAxis(distProps[*iNames].axisTitles.second);
     
-    for (int iFile=0; iFile < numFiles; iFile++) {
-      Key entryKey (*iNames,type,(int)(3* charges[iFile]),(int)masses[iFile]);
+      for (int iFile=0; iFile < numFiles; iFile++) {
+        Key entryKey (*iNames,iType,(int)(3* charges[iFile]),(int)masses[iFile]);
       
-      string canv_name = entryKey.name + "_canv";
-      string dist_name = entryKey.name + "_dist";
+        string canv_name = entryKey.name + "_canv";
+        string dist_name = entryKey.name + "_dist";
 
-      yAxis = fmt::format(yAxis.c_str(), (*upperLim-*lowerLim) / *nBins);
-      TCanvas *tempCanv = new TCanvas(canv_name.c_str(),canv_name.c_str(),500,500);
-      TH1F *tempHist = new TH1F(dist_name.c_str(),dist_name.c_str(),*nBins,*lowerLim,*upperLim);
+        yAxis = fmt::format(yAxis.c_str(), (*upperLim-*lowerLim) / *nBins);
+        TCanvas *tempCanv = new TCanvas(canv_name.c_str(),canv_name.c_str(),500,500);
+        TH1F *tempHist = new TH1F(dist_name.c_str(),dist_name.c_str(),*nBins,*lowerLim,*upperLim);
 
-      tempHist->GetXaxis()->SetTitle(xAxis.c_str());
-      tempHist->GetYaxis()->SetTitle(yAxis.c_str());
-
-      //tempHist->SetLineWidth(2); //Better visibility
+        tempHist->GetXaxis()->SetTitle(xAxis.c_str());
+        tempHist->GetYaxis()->SetTitle(yAxis.c_str());
       
-      argDists.emplace(entryKey,distObjects(tempCanv,tempHist));
+        argDists.emplace(entryKey,distObjects(tempCanv,tempHist));
+      }
     }
   }
 }
@@ -328,21 +329,21 @@ int main(int argc, char **argv){
   map<string,distProp> distProps = {
     {"beta",{limits(0.9,1.0),200,axes("#beta","events/{}")}},
     {"energy",{limits(0,2200),200,axes("E [GeV]","events/{} GeV")}},
-    {"eta",{limits(0.9,1.0),200,axes("#eta", "events/{}")}},
+    {"eta",{limits(-3,3),30,axes("#eta", "events/{}")}},
     {"gamma",{limits(0,100.0),200,axes("#gamma", "events/{}")}},
-    {"Ih",{limits(0.9,1.0),200,axes("I_{h} [MeV/cm]", "events/{} MeV/cm")}},
+    {"Ih",{limits(0,35),70,axes("I_{h} [MeV/cm]", "events/{} MeV/cm")}},
     {"momentum",{limits(0.0,2000),200,axes("P [GeV/c]", "events/{} GeV/c")}},
-    {"phi",{limits(0.9,1.0),200,axes("#phi [deg]", "events/{} deg")}},
-    {"trans_momentum",{limits(0.9,1.0),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
+    {"phi",{limits(-200,200),100,axes("#phi [deg]", "events/{} deg")}},
+    {"trans_momentum",{limits(0,2000),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
     {"theta",{limits(0,180),180,axes("#theta [deg]", "events/{} deg")}},
-    {"TOF",{limits(0.9,1.0),200,axes("t [s]", "events/{} s")}},
+    {"TOF",{limits(0,7),70,axes("t [s]", "events/{} s")}},
     {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_{r}}", "events/{}")}},
     {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}}
   };
 
   
   AllocateDistributions(distList,charges,masses,numFiles,distNames,distProps);
-  
+
   
   //Pointer for the tree being read
   TTree *tree;
@@ -399,12 +400,24 @@ int main(int argc, char **argv){
       //Fill the theta distribution
       Key thetaKey (string("theta"), type, (int)(3* *charge), (int)*mass);
       distList[thetaKey].distribution->Fill(theta * (180.0/TMath::Pi()));
+
+      //fill the eta distribution
+      Key etaKey (string("eta"), type, (int)(3* *charge), (int)*mass);
+      distList[etaKey].distribution->Fill(eta);
+
+      //fill the phi distribution
+      Key phiKey (string("phi"), type, (int)(3* *charge), (int)*mass);
+      distList[phiKey].distribution->Fill(phi * (180.0/TMath::Pi()));
       
       //Calculate Momentum from transverse and theta (rad)
       P = Pt / TMath::Sin(theta);
       //Fill momentum distribution
       Key pKey (string("momentum"), type, (int)(3* *charge), (int)*mass);
       distList[pKey].distribution->Fill(P);
+
+      //Fill the transverse momentum distribution
+      Key ptKey (string("trans_momentum"), type, (int)(3* *charge), (int)*mass);
+      distList[ptKey].distribution->Fill(Pt);
       
       //Calculate the relativistic energy
       E = TMath::Sqrt( P*P + Mass*Mass );
@@ -426,6 +439,13 @@ int main(int argc, char **argv){
       Key gammaKey (string("gamma"), type, (int)(3* *charge), (int)*mass);
       distList[gammaKey].distribution->Fill(gamma);
 
+      //Fill the Ih distribution
+      Key ihKey (string("Ih"), type, (int)(3* *charge), (int)*mass);
+      distList[ihKey].distribution->Fill(Ih);
+
+      //Fill the tof key
+      Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
+      distList[tofKey].distribution->Fill(TOF);
       
     }//end event loop
     datFile->Close();
@@ -452,11 +472,7 @@ int main(int argc, char **argv){
     outFile->cd("/");
   }
 
-  // for(const auto &distIt : GammaDist){
-  //   currDist = distIt.second.second;
-  //   currDist->Scale(norm/currDist->Integral("width"));
-  //   currDist->Write();
-  // }
+  //Create Ih vs P Distribution
   
   cout << "Finished writing to file" << endl;
   outFile->Close();
