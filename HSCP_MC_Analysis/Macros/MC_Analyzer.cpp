@@ -208,19 +208,26 @@ static NameDat *FileNameParser( string *Names, const int nFiles ){
 
 
 //For each distribution type, go through all files (masses and charges)
-static void AllocateDistributions( distMap &argDists, const double *charges, const double *masses, const int &numFiles, const vector<string> &distNames, map<string,distProp> &distProps){
-  vector<string> types = {"Reco","Gen"};
+static void AllocateDistributions( distMap &argDists, const double *charges, const double *masses, const int &numFiles, const vector<string> &distNames, map<string,distProp> &distProps, const vector<string> &types){
   //const string type = "Reco";
-  for( const auto &iType = types.begin(); iType != types.end(); ++iTypes ){
-    for (auto iNames = distNames.begin(); iNames != distNames.end(); ++iNames) {
-      double *lowerLim = &distProps[*iNames].axisLimits.first;
-      double *upperLim = &distProps[*iNames].axisLimits.second;
-      double *nBins = &distProps[*iNames].nBins;
-      string xAxis(distProps[*iNames].axisTitles.first);
-      string yAxis(distProps[*iNames].axisTitles.second);
+  bool isGen = false;
+  for( const auto &iType : types){
+    for (const auto &iNames : distNames) {
+      if (isGen){
+        if (iNames == "I" || iNames == "Ih" || iNames == "dZ" || iNames == "dXY" || iNames == "dR" || iNames == "hasMuon")
+          continue;
+      }
+      else{
+        if (iNames == "charge") continue;
+      }
+      double *lowerLim = &distProps[iNames].axisLimits.first;
+      double *upperLim = &distProps[iNames].axisLimits.second;
+      double *nBins = &distProps[iNames].nBins;
+      string xAxis(distProps[iNames].axisTitles.first);
+      string yAxis(distProps[iNames].axisTitles.second);
     
       for (int iFile=0; iFile < numFiles; iFile++) {
-        Key entryKey (*iNames,iType,(int)(3* charges[iFile]),(int)masses[iFile]);
+        Key entryKey (iNames,iType,(int)(3* charges[iFile]),(int)masses[iFile]);
       
         string canv_name = entryKey.name + "_canv";
         string dist_name = entryKey.name + "_dist";
@@ -254,7 +261,7 @@ void SetRootStyle(){
   //Useful Style Tips for ROOT
   /*
     http://www.nbi.dk/~petersen/Teaching/Stat2014/PythonRootIntro/ROOT_TipsAndTricks.pdf
-   */
+  */
   TStyle *aStyle = new TStyle("aStyle","Austin's Root Style");
   aStyle->SetPalette(1,0); //Get rid of terrible default color scheme
   aStyle->SetOptStat(0);
@@ -323,7 +330,8 @@ int main(int argc, char **argv){
     "theta",
     "TOF",
     "TOFdivTRel",
-    "mass"
+    "mass",
+    "charge"
   };
   
   map<string,distProp> distProps = {
@@ -338,119 +346,171 @@ int main(int argc, char **argv){
     {"theta",{limits(0,180),180,axes("#theta [deg]", "events/{} deg")}},
     {"TOF",{limits(0,7),70,axes("t [s]", "events/{} s")}},
     {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_{r}}", "events/{}")}},
-    {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}}
+    {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}},
+    {"charge",{limits(0,40),40,axes("charge [e/3]", "events/{} e/3")}}
   };
 
+  vector<string> types = {"Gen","Reco"};
   
-  AllocateDistributions(distList,charges,masses,numFiles,distNames,distProps);
+  AllocateDistributions(distList,charges,masses,numFiles,distNames,distProps, types);
 
-  
   //Pointer for the tree being read
   TTree *tree;
-  unsigned int event;
+ 
+  unsigned int reco_event;
+  int gen_event;
   unsigned int Hscp;
   float E;
-  float Pt, P;
+  float reco_Pt;
+  double gen_Pt;
+  float P;
   float I;
   float Ih; //This is the energy deposition that we are interested in 
   float TOF; 
-  float Mass; //Reco mass. Not correct. Assumes unit charge
+  float reco_Mass;
+  double gen_Mass;
   float dZ, dXY, dR;
-  float eta, phi, theta;
+  float reco_eta, reco_phi;
+  double gen_eta, gen_phi;
+  float theta;
   float beta, gamma;
   bool hasMuon;
+  int genCharge; //Charge given from gen
+  int PDG;
 
-  //Loop over the files
-  for( int iFile = 0; iFile < numFiles; iFile++ ){
-    string file = "/home/austin/HSCP_Study/HSCP_MC_Files/";
-    file += fileList[iFile];
-    TFile *datFile = new TFile(file.c_str(), "READ"); //Open the current file
+  float eta, Pt, Mass, phi;
+  unsigned int event;
 
-    double *charge = &charges[iFile];
-    double *mass = &masses[iFile];
-    string type = "Reco";
-    //Create a string for the appropriate file directory
-    ///storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files
-    string mcDir(fmt::format("mchamp{}_M_{}/HscpCandidates",3*charges[iFile],masses[iFile]));
-
-    //Set the appropriate branches for the MC particles
-    tree = (TTree*)datFile->Get(mcDir.c_str());
+  bool isGen;
+  //Loop over gen/reco
+  for (const auto &iTypes : types) {
+    //Loop over the files
+    if (iTypes == "Gen")
+      isGen = true;
+    else isGen = false;
     
-    tree->SetBranchAddress("Event", &event);
-    tree->SetBranchAddress("Hscp", &Hscp);
-    tree->SetBranchAddress("Pt",&Pt);
-    tree->SetBranchAddress("I",&I);
-    tree->SetBranchAddress("Ih",&Ih);
-    tree->SetBranchAddress("TOF",&TOF);
-    tree->SetBranchAddress("Mass",&Mass);
-    tree->SetBranchAddress("dZ",&dZ);
-    tree->SetBranchAddress("dXY",&dXY);
-    tree->SetBranchAddress("dR",&dR);
-    tree->SetBranchAddress("eta",&eta);
-    tree->SetBranchAddress("phi",&phi);
-    tree->SetBranchAddress("hasMuon",&hasMuon);
-    
-    //Loop over the events
-    //cout << fmt::format("{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}{:<12}", "event", "Pt(GeV)", "Ih(MeV/cm)", "Mass(GeV)", "eta", "phi", "theta(deg)","E") << endl;
-    for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
-      tree->GetEntry(iEvt);
+    for( int iFile = 0; iFile < numFiles; iFile++ ){
+      string file = "/home/austin/HSCP_Study/HSCP_MC_Files/";
+      file += fileList[iFile];
+      TFile *datFile = new TFile(file.c_str(), "READ"); //Open the current file
+
+      double *charge = &charges[iFile];
+      double *mass = &masses[iFile];
+      string type = iTypes;
+      //Create a string for the appropriate file directory
+      ///storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files
+      string fileDir;
+      if (type == "Reco")
+        fileDir = string(fmt::format("mchamp{}_M_{}/HscpCandidates",3*charges[iFile],masses[iFile]));
+      else 
+        fileDir = string(fmt::format("mchamp{}_M_{}/GENinfo",3*charges[iFile],masses[iFile]));
+
+      //Set the appropriate branches for the MC particles
+      tree = (TTree*)datFile->Get(fileDir.c_str());
+
+      if (!isGen){
+        tree->SetBranchAddress("I",&I);
+        tree->SetBranchAddress("Ih",&Ih);
+        tree->SetBranchAddress("TOF",&TOF);
+        tree->SetBranchAddress("dZ",&dZ);
+        tree->SetBranchAddress("dXY",&dXY);
+        tree->SetBranchAddress("dR",&dR);
+        tree->SetBranchAddress("hasMuon",&hasMuon);
+        tree->SetBranchAddress("Hscp", &Hscp);
+        tree->SetBranchAddress("Event", (&reco_event));
+        tree->SetBranchAddress("Pt",(&reco_Pt));
+        tree->SetBranchAddress("Mass",(&reco_Mass));
+        tree->SetBranchAddress("eta",(&reco_eta));
+        tree->SetBranchAddress("phi",(&reco_phi));
+      }
+      else{
+        tree->SetBranchAddress("charge", &genCharge);
+        tree->SetBranchAddress("Event", (&gen_event));
+        tree->SetBranchAddress("Pt",(&gen_Pt));
+        tree->SetBranchAddress("Mass",(&gen_Mass));
+        tree->SetBranchAddress("eta",(&gen_eta));
+        tree->SetBranchAddress("phi",(&gen_phi));
+      }
       
-      //Calculate theta
-      theta = 2*TMath::ATan( TMath::Exp( -1 * eta ) );
-      //Fill the theta distribution
-      Key thetaKey (string("theta"), type, (int)(3* *charge), (int)*mass);
-      distList[thetaKey].distribution->Fill(theta * (180.0/TMath::Pi()));
+      for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
+        tree->GetEntry(iEvt);
 
-      //fill the eta distribution
-      Key etaKey (string("eta"), type, (int)(3* *charge), (int)*mass);
-      distList[etaKey].distribution->Fill(eta);
+        if(isGen){
+           eta = gen_eta;
+           event = gen_event;
+           Pt = gen_Pt;
+           Mass = gen_Mass;
+           eta = gen_eta;
+           phi = gen_phi;
+        }
+        else{
+          eta = (float)reco_eta;
+          event = (unsigned int)reco_event;
+          Pt = (float)reco_Pt;
+          Mass = (float)reco_Mass;
+          eta = (float)reco_eta;
+          phi = (float)reco_phi;
+        }
 
-      //fill the phi distribution
-      Key phiKey (string("phi"), type, (int)(3* *charge), (int)*mass);
-      distList[phiKey].distribution->Fill(phi * (180.0/TMath::Pi()));
+        //Calculate theta
+        theta = 2*TMath::ATan( TMath::Exp( -1 * (eta) ) );
+        //Fill the theta distribution
+        Key thetaKey (string("theta"), type, (int)(3* *charge), (int)*mass);
+        distList[thetaKey].distribution->Fill(theta * (180.0/TMath::Pi()));
+
+        //fill the eta distribution
+        Key etaKey (string("eta"), type, (int)(3* *charge), (int)*mass);
+        distList[etaKey].distribution->Fill((eta));
+
+        //fill the phi distribution
+        Key phiKey (string("phi"), type, (int)(3* *charge), (int)*mass);
+        distList[phiKey].distribution->Fill((phi) * (180.0/TMath::Pi()));
       
-      //Calculate Momentum from transverse and theta (rad)
-      P = Pt / TMath::Sin(theta);
-      //Fill momentum distribution
-      Key pKey (string("momentum"), type, (int)(3* *charge), (int)*mass);
-      distList[pKey].distribution->Fill(P);
+        //Calculate Momentum from transverse and theta (rad)
+        P = (Pt) / TMath::Sin(theta);
+        //Fill momentum distribution
+        Key pKey (string("momentum"), type, (int)(3* *charge), (int)*mass);
+        distList[pKey].distribution->Fill(P);
 
-      //Fill the transverse momentum distribution
-      Key ptKey (string("trans_momentum"), type, (int)(3* *charge), (int)*mass);
-      distList[ptKey].distribution->Fill(Pt);
+        //Fill the transverse momentum distribution
+        Key ptKey (string("trans_momentum"), type, (int)(3* *charge), (int)*mass);
+        distList[ptKey].distribution->Fill((Pt));
       
-      //Calculate the relativistic energy
-      E = TMath::Sqrt( P*P + Mass*Mass );
-      //Fill the energy distribution
-      Key enKey (string("energy"), type, (int)(3* *charge), (int)*mass);
-      distList[enKey].distribution->Fill(E);
+        //Calculate the relativistic energy
+        E = TMath::Sqrt( P*P + TMath::Power(Mass,2) );
+        //Fill the energy distribution
+        Key enKey (string("energy"), type, (int)(3* *charge), (int)*mass);
+        distList[enKey].distribution->Fill(E);
 
-      //Calculate beta
-      beta = P / E;
-      //Fill beta distribution
-      Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
-      distList[betaKey].distribution->Fill(beta);
-      
+        //Calculate beta
+        beta = P / E;
+        //Fill beta distribution
+        Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
+        distList[betaKey].distribution->Fill(beta);      
 
-      //Calculate gamma
-      gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
+        //Calculate gamma
+        gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
 
-      //Fill the gamma distribution
-      Key gammaKey (string("gamma"), type, (int)(3* *charge), (int)*mass);
-      distList[gammaKey].distribution->Fill(gamma);
+        //Fill the gamma distribution
+        Key gammaKey (string("gamma"), type, (int)(3* *charge), (int)*mass);
+        distList[gammaKey].distribution->Fill(gamma);
 
-      //Fill the Ih distribution
-      Key ihKey (string("Ih"), type, (int)(3* *charge), (int)*mass);
-      distList[ihKey].distribution->Fill(Ih);
+        //Fill the Ih distribution
+        Key ihKey (string("Ih"), type, (int)(3* *charge), (int)*mass);
+        distList[ihKey].distribution->Fill((Ih));
 
-      //Fill the tof key
-      Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
-      distList[tofKey].distribution->Fill(TOF);
-      
-    }//end event loop
-    datFile->Close();
-  }//end file loop
-  
+        //Fill the tof key
+        Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
+        distList[tofKey].distribution->Fill((TOF));
+
+        //Fill the mass distribution
+        Key massKey (string("mass"), type, (int)(3* *charge), (int)*mass);
+        distList[massKey].distribution->Fill((Mass));
+          
+      }//end event loop
+      datFile->Close();
+    }//end file loop
+  }//end types loop
   //Loop through all available distributions, writing them to the disc.
   TCanvas *currCanv;
   TH1F *currDist;
@@ -462,16 +522,29 @@ int main(int argc, char **argv){
   AllocateOutfile(outFile, distNames);
   
   //Loop through each distribution (eta,beta,gamma,etc)
-  outFile->cd("Reco");
-  for(const auto &distIt : distList){
-    string dir = string("Reco/") + distIt.first.dist;
-    outFile->cd(dir.c_str());
-    currDist = distIt.second.distribution;
-    currDist->Scale(norm/currDist->Integral("width"));
-    currDist->Write();
-    outFile->cd("/");
-  }
+  //outFile->cd("Reco");
 
+  for (const auto &iTypes : types) {
+    if (iTypes == "Gen")
+      isGen = true;
+    else
+      isGen = false;
+    for (const auto &distIt : distList){
+      string dir = fmt::format("/{}/{}",iTypes,distIt.first.dist);
+      if (isGen) {
+        if (distIt.first.type != "Gen") continue;
+      }
+      else {
+        if (distIt.first.type != "Reco") continue;
+        }
+      //cout << distIt.first.type << endl;
+      outFile->cd(dir.c_str());
+      currDist = distIt.second.distribution;
+      currDist->Scale(norm/currDist->Integral("width"));
+      currDist->Write();
+      //outFile->cd("/");
+    }
+  }
   //Create Ih vs P Distribution
   
   cout << "Finished writing to file" << endl;
