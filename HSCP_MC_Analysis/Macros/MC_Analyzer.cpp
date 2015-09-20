@@ -30,6 +30,9 @@
 #include <TAttFill.h>
 #include <TAttMarker.h>
 #include <TAttText.h>
+#include <TGraph.h>
+#include <TColor.h>
+#include <Rtypes.h>
 
 using namespace std;
   
@@ -96,7 +99,7 @@ static string *ListOfFiles(){
   stringstream streamnFiles;
   
   //First, count how many files we will be reading
-  if(!(inStream = popen("ls /home/austin/HSCP_Study/HSCP_MC_Files/*.root -l | wc -l", "r"))){
+  if(!(inStream = popen("ls /home/austin/HSCP_Study/HSCP_MC_Files/Histos_mchamp*.root -l | wc -l", "r"))){
     exit(0);
   }
     
@@ -117,7 +120,7 @@ static string *ListOfFiles(){
   //Now we need to read in the list of files
   //Will do something similar to the above, but using this method to get only the file names
   stringstream testStream;
-  if(!(inStream = popen("find /home/austin/HSCP_Study/HSCP_MC_Files/*.root -printf \"%f\n\"","r"))){
+  if(!(inStream = popen("find /home/austin/HSCP_Study/HSCP_MC_Files/Histos_mchamp*.root -printf \"%f\n\"","r"))){
     exit(0);
   }
   while(fgets(charFiles, sizeof(charFiles), inStream)!=NULL){
@@ -248,10 +251,13 @@ static void AllocateDistributions( distMap &argDists, const double *charges, con
 static void AllocateOutfile( TFile *&aFile, const vector<string> &distNames ){
   aFile->mkdir("Reco");
   aFile->mkdir("Gen");
+  aFile->mkdir("Bkg");
   for (const auto &iNames : distNames) {
     aFile->cd("Reco");
     gDirectory->mkdir(iNames.c_str());
     aFile->cd("Gen");
+    gDirectory->mkdir(iNames.c_str());
+    aFile->cd("Bkg");
     gDirectory->mkdir(iNames.c_str());
   }
   aFile->cd("/");
@@ -288,6 +294,88 @@ void SetRootStyle(){
   aStyle->SetPaperSize(20,24); //US Letter
   gROOT->SetStyle("aStyle");
   gROOT->ForceStyle();
+}
+
+
+void WriteStandardDistributions( TFile *&outFile, const vector<string> &types, const distMap &distList ){
+  
+  bool isGen;
+  double norm = 1;
+
+  TH1F *currDist;
+  
+  for (const auto &iTypes : types) {
+    if (iTypes == "Gen")
+      isGen = true;
+    else
+      isGen = false;
+    for (const auto &distIt : distList){
+      string dir = fmt::format("/{}/{}",iTypes,distIt.first.dist);
+      if (isGen) {
+        if (distIt.first.type != "Gen") continue;
+      }
+      else {
+        if (distIt.first.type != "Reco") continue;
+        }
+      outFile->cd(dir.c_str());
+      currDist = distIt.second.distribution;
+      currDist->Scale(norm/currDist->Integral("width"));
+      currDist->Draw("P");
+      currDist->Write();
+    }
+  }
+
+}
+
+
+void WriteGenFracTrackVsBeta( TFile *&outFile, const vector<string> &types, const distMap &distList, const map<double,int> &massCounts, const map<double,int> &chargeCounts){
+  //Have to integrate between two beta values in order to get the fraction of particles
+  //that lie between those values (assuming that the primitive distribution is normalized to unity)
+  //Only want to make the plot with unity charges (key for charge = 3)
+  
+  TH1F *currDist;
+  
+  const double CHARGE = 1.0; //Desired constant charge for the plots, in units of actual charge (not e/3)
+  TGraph *outGraph = new TGraph( chargeCounts.find(CHARGE*3)->second );
+
+  //These are the steps that will be taken during the beta integrations, and for the distance
+  //between the points in the resulting distribution
+  const double BETASTEP = 0.05;
+
+  const array<int,7> colorList = {kBlack,kGray,kRed,kBlue,kCyan+4,kGreen+2,kOrange-2};
+
+  unsigned int iPoint = 0;
+  //Loop through all available masses
+  for (const auto &iMass : massCounts){
+    //Check to see if this mass is available with the desired charge
+    //START HERE
+    //START HERE
+    //START HERE
+    //START HERE
+    Key betaKey = Key (string("beta"), string("Gen"), (int)(3 * CHARGE), (int)iMass.first);
+    //map.count returns zero if the item is not found. want to skip masses that are not with desired charge
+    if (distList.count(betaKey) == 0) continue;
+    
+    currDist = distList[betaKey].distribution;
+    
+    distList[betaKey].distribution->Fill(theta * (180.0/TMath::Pi()));
+  }
+  // for (const auto &distIt : distList){
+  //   string dir = fmt::format("/{}/{}",iTypes,distIt.first.dist);
+  //   if (isGen) {
+  //     if (distIt.first.type != "Gen") continue;
+  //   }
+  //   else {
+  //     if (distIt.first.type != "Reco") continue;
+  //     }
+  //   outFile->cd(dir.c_str());
+  //   currDist = distIt.second.distribution;
+  //   currDist->Scale(norm/currDist->Integral("width"));
+  //   currDist->Draw("P");
+  //   currDist->Write();
+  // }
+  
+  
 }
 
 /*Main*/
@@ -333,7 +421,8 @@ int main(int argc, char **argv){
     "mass",
     "charge"
   };
-  
+
+  //Right now, sets the same limits and bins for both reco and gen particles.
   map<string,distProp> distProps = {
     {"beta",{limits(0.9,1.0),200,axes("#beta","events/{}")}},
     {"energy",{limits(0,2200),200,axes("E [GeV]","events/{} GeV")}},
@@ -512,40 +601,16 @@ int main(int argc, char **argv){
     }//end file loop
   }//end types loop
   //Loop through all available distributions, writing them to the disc.
-  TCanvas *currCanv;
-  TH1F *currDist;
-  double norm = 1;
 
   //Data output file
   TFile *outFile = new TFile("HSCP_MC_Analysis.root","RECREATE");
   //Set up the outfile to have a folder for each data type
   AllocateOutfile(outFile, distNames);
   
-  //Loop through each distribution (eta,beta,gamma,etc)
-  //outFile->cd("Reco");
-
-  for (const auto &iTypes : types) {
-    if (iTypes == "Gen")
-      isGen = true;
-    else
-      isGen = false;
-    for (const auto &distIt : distList){
-      string dir = fmt::format("/{}/{}",iTypes,distIt.first.dist);
-      if (isGen) {
-        if (distIt.first.type != "Gen") continue;
-      }
-      else {
-        if (distIt.first.type != "Reco") continue;
-        }
-      //cout << distIt.first.type << endl;
-      outFile->cd(dir.c_str());
-      currDist = distIt.second.distribution;
-      currDist->Scale(norm/currDist->Integral("width"));
-      currDist->Write();
-      //outFile->cd("/");
-    }
-  }
-  //Create Ih vs P Distribution
+  //Loop through each standard distribution (eta,beta,gamma,etc)
+  WriteStandardDistributions( outFile, types, distList );
+  
+  //Create Ih vs P Distribution 
   
   cout << "Finished writing to file" << endl;
   outFile->Close();
