@@ -31,8 +31,11 @@
 #include <TAttMarker.h>
 #include <TAttText.h>
 #include <TGraph.h>
+#include <TMultiGraph.h>
 #include <TColor.h>
 #include <Rtypes.h>
+#include <TVectorD.h>
+#include <TAxis.h>
 
 using namespace std;
   
@@ -297,7 +300,7 @@ void SetRootStyle(){
 }
 
 
-void WriteStandardDistributions( TFile *&outFile, const vector<string> &types, const distMap &distList ){
+void WriteStandardDistributions( TFile *&outFile, const vector<string> &types, const distMap &distList){
   
   bool isGen;
   double norm = 1;
@@ -328,37 +331,67 @@ void WriteStandardDistributions( TFile *&outFile, const vector<string> &types, c
 }
 
 
-void WriteGenFracTrackVsBeta( TFile *&outFile, const vector<string> &types, const distMap &distList, const map<double,int> &massCounts, const map<double,int> &chargeCounts){
+void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map<double,int> &massCounts, const map<string,distProp> &distProps){
   //Have to integrate between two beta values in order to get the fraction of particles
   //that lie between those values (assuming that the primitive distribution is normalized to unity)
   //Only want to make the plot with unity charges (key for charge = 3)
+  const array<int,7> colorList = {kBlack,kGray,kRed,kBlue,kCyan+4,kGreen+2,kOrange-2};
   
-  TH1F *currDist;
+  TH1F *currDist = NULL;
+  TGraph *currGraph = NULL;
   
   const double CHARGE = 1.0; //Desired constant charge for the plots, in units of actual charge (not e/3)
-  TGraph *outGraph = new TGraph( chargeCounts.find(CHARGE*3)->second );
+  //TGraph *outGraph = new TGraph( chargeCounts.find(CHARGE*3)->second );
+  //Make a vector of TGraph objects whose constituents will compose the TMultiGraph that is saved to disc
+  vector<TGraph> graphs;
 
   //These are the steps that will be taken during the beta integrations, and for the distance
   //between the points in the resulting distribution
   const double BETASTEP = 0.05;
-
-  const array<int,7> colorList = {kBlack,kGray,kRed,kBlue,kCyan+4,kGreen+2,kOrange-2};
-
-  unsigned int iPoint = 0;
+  //Fill an array of beta values based on the step size and range of the beta distributions
+  double betaMin = distProps.find(string("beta"))->second.axisLimits.first;
+ 
+  double betaMax = distProps.find(string("beta"))->second.axisLimits.second;
+  cout << betaMin << '\t' << betaMax << endl;
+  unsigned int nPoints = TMath::Ceil((betaMax - betaMin) / BETASTEP);
+  cout << nPoints << endl;
+  vector<double> xPoints; //Vectors automatically order increasing from min
+  for (double iP = betaMin; iP <= betaMax+BETASTEP; iP+=BETASTEP) {
+    cout << iP << endl;
+    xPoints.push_back(iP);
+  }
+  //START HERERERERERE
+  vector<double> yPoints;
+  TAxis *xAxis;
+  int bMin, bMax;
+  double integral;
   //Loop through all available masses
   for (const auto &iMass : massCounts){
     //Check to see if this mass is available with the desired charge
-    //START HERE
-    //START HERE
-    //START HERE
-    //START HERE
     Key betaKey = Key (string("beta"), string("Gen"), (int)(3 * CHARGE), (int)iMass.first);
     //map.count returns zero if the item is not found. want to skip masses that are not with desired charge
     if (distList.count(betaKey) == 0) continue;
+    currDist = distList.find(betaKey)->second.distribution;
+    xAxis = currDist->GetXaxis();
     
-    currDist = distList[betaKey].distribution;
+    //Calculate the fraction of tracks at each point. For each point, the marker represents the fraction
+    //of tracks between the previous point and the current point
+    // for (auto iPoint = xPoints.begin(); iPoint != xPoints.end(); ++iPoint) {
+    //   if (iPoint == xPoints.begin()) continue;
+    //   double Prev = *prev(iPoint,1);
+    //   bMin = xAxis->FindBin(Prev);
+    //   bMax = xAxis->FindBin(*iPoint);
+    //   integral = currDist->Integral(bMin,bMax);
+    //   // integral -= currDist->GetBinContent(bMin)*(Prev-xAxis->GetBinLowEdge(bMin))/
+    //   //   xAxis->GetBinWidth(bMin);
+    //   // integral -= currDist->GetBinContent(bMin)*(xAxis->GetBinUpEdge(bMax)-*iPoint)/
+    //   //   xAxis->GetBinWidth(bMax);
+    //   yPoints.push_back(integral);
+    // }
     
-    distList[betaKey].distribution->Fill(theta * (180.0/TMath::Pi()));
+    // xPoints.shrink_to_fit();
+    // yPoints.shrink_to_fit();
+    // cout << xPoints.size() << '\t' << yPoints.size();
   }
   // for (const auto &distIt : distList){
   //   string dir = fmt::format("/{}/{}",iTypes,distIt.first.dist);
@@ -375,7 +408,8 @@ void WriteGenFracTrackVsBeta( TFile *&outFile, const vector<string> &types, cons
   //   currDist->Write();
   // }
   
-  
+  delete currDist;
+  delete currGraph;
 }
 
 /*Main*/
@@ -424,7 +458,7 @@ int main(int argc, char **argv){
 
   //Right now, sets the same limits and bins for both reco and gen particles.
   map<string,distProp> distProps = {
-    {"beta",{limits(0.9,1.0),200,axes("#beta","events/{}")}},
+    {"beta",{limits(0.0,1.0),200,axes("#beta","events/{}")}},
     {"energy",{limits(0,2200),200,axes("E [GeV]","events/{} GeV")}},
     {"eta",{limits(-3,3),30,axes("#eta", "events/{}")}},
     {"gamma",{limits(0,100.0),200,axes("#gamma", "events/{}")}},
@@ -609,7 +643,8 @@ int main(int argc, char **argv){
   
   //Loop through each standard distribution (eta,beta,gamma,etc)
   WriteStandardDistributions( outFile, types, distList );
-  
+
+  WriteGenFracTrackVsBeta(outFile, distList, massCounts, distProps);
   //Create Ih vs P Distribution 
   
   cout << "Finished writing to file" << endl;
