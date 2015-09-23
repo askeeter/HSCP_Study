@@ -36,6 +36,7 @@
 #include <Rtypes.h>
 #include <TVectorD.h>
 #include <TAxis.h>
+#include <TLegend.h>
 
 using namespace std;
   
@@ -70,7 +71,8 @@ struct distObjects{
   TH1F *distribution;
   distObjects() : canvas(NULL), distribution(NULL) {}
   distObjects(const distObjects &arg) : canvas(arg.canvas), distribution(arg.distribution) {}
-  distObjects(TCanvas *&aCanv, TH1F *&aDist) : canvas((TCanvas*)aCanv->Clone()), distribution((TH1F*)aDist->Clone()) {}
+  //distObjects(TCanvas *&aCanv, TH1F *&aDist) : canvas((TCanvas*)aCanv->Clone()), distribution((TH1F*)aDist->Clone()) {}
+  distObjects(TCanvas *&aCanv, TH1F *&aDist) : canvas(NULL), distribution((TH1F*)aDist->Clone()) {}
 };
 
 typedef map<Key,distObjects> distMap;
@@ -193,22 +195,27 @@ static NameDat *FileNameParser( string *Names, const int nFiles ){
   
   //Count the masses
   for( int iMass = 0; iMass < nFiles; iMass++ ){
-    if( !massCounts.insert( make_pair(outDat->mass[iMass], 1 ) ).second ){
-      //Element is alread present. Need to increment the count
-      massCounts[outDat->mass[iMass]] += 1;
+    if( massCounts.count(outDat->mass[iMass]) != 0 ){
+      massCounts.find(outDat->mass[iMass])->second += 1;
+    }
+    else{
+      massCounts.emplace( outDat->mass[iMass], 1 );
     }
   }
 
   //Count the charges
   for( int iCharge = 0; iCharge < nFiles; iCharge++ ){
-    if( !chargeCounts.insert( make_pair(outDat->charge[iCharge], 1 ) ).second ){
-      //Element is alread present. Need to increment the count
-      chargeCounts[outDat->charge[iCharge]] += 1;
+    if( chargeCounts.count(outDat->charge[iCharge]*3) != 0 ){
+      chargeCounts.find(outDat->charge[iCharge]*3)->second += 1;
+    }
+    else{
+      chargeCounts.emplace( outDat->charge[iCharge]*3, 1 );
     }
   }
 
   outDat->chargeCounts = chargeCounts;
   outDat->massCounts = massCounts;
+  
   return outDat;
 }
 
@@ -239,7 +246,8 @@ static void AllocateDistributions( distMap &argDists, const double *charges, con
         string dist_name = entryKey.name + "_dist";
 
         yAxis = fmt::format(yAxis.c_str(), (*upperLim-*lowerLim) / *nBins);
-        TCanvas *tempCanv = new TCanvas(canv_name.c_str(),canv_name.c_str(),500,500);
+        //TCanvas *tempCanv = new TCanvas(canv_name.c_str(),canv_name.c_str(),500,500);
+        TCanvas *tempCanv = NULL;
         TH1F *tempHist = new TH1F(dist_name.c_str(),dist_name.c_str(),*nBins,*lowerLim,*upperLim);
 
         tempHist->GetXaxis()->SetTitle(xAxis.c_str());
@@ -323,7 +331,7 @@ void WriteStandardDistributions( TFile *&outFile, const vector<string> &types, c
       outFile->cd(dir.c_str());
       currDist = distIt.second.distribution;
       currDist->Scale(norm/currDist->Integral("width"));
-      currDist->Draw("P");
+      //currDist->Draw("P");
       currDist->Write();
     }
   }
@@ -335,90 +343,193 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
   //Have to integrate between two beta values in order to get the fraction of particles
   //that lie between those values (assuming that the primitive distribution is normalized to unity)
   //Only want to make the plot with unity charges (key for charge = 3)
-  const array<int,7> colorList = {kBlack,kGray,kRed,kBlue,kCyan+4,kGreen+2,kOrange-2};
+  const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
+  const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
+
+  const double CHARGE = 1.0; //Desired constant charge for the plots, in units of actual charge (not e/3)
+
+  int nBins = distProps.find(string("beta"))->second.nBins;
+  double betaMin = distProps.find(string("beta"))->second.axisLimits.first; 
+  double betaMax = distProps.find(string("beta"))->second.axisLimits.second;
+  double BETASTEP = (betaMax-betaMin)/nBins; //change to math limits and step in main
+  
+  
+  unsigned int nPoints = TMath::Ceil((betaMax - betaMin) / BETASTEP);
+  
+  
+  TMultiGraph *LowMassOutGraph = new TMultiGraph("LowMassfracPart_beta","LowMassfracPart_beta");
+  TLegend *LowMassLegend = new TLegend(0.2,0.65,0.5,0.85);
+  //LowMassLegend->SetTextFont(72);
+  LowMassLegend->SetTextSize(0.025);
+  LowMassLegend->SetFillColor(0);
+  TCanvas *LowMassCanvas = new TCanvas("low","low",500,500);
+                                       
+  TMultiGraph *HighMassOutGraph = new TMultiGraph("HighMassfracPart_beta","HighMassfracPart_beta");
+  TLegend *HighMassLegend = new TLegend(0.5,0.75,0.78,0.90);
+  //HighMassLegend->SetTextFont(72);
+  HighMassLegend->SetTextSize(0.025);
+  HighMassLegend->SetFillColor(0);
+  TCanvas *HighMassCanvas = new TCanvas("high","high",500,500);
   
   TH1F *currDist = NULL;
   TGraph *currGraph = NULL;
-  
-  const double CHARGE = 1.0; //Desired constant charge for the plots, in units of actual charge (not e/3)
-  //TGraph *outGraph = new TGraph( chargeCounts.find(CHARGE*3)->second );
-  //Make a vector of TGraph objects whose constituents will compose the TMultiGraph that is saved to disc
-  vector<TGraph> graphs;
+  const double NORM = 1;
 
+  //Make a vector of TGraph objects whose constituents will compose the TMultiGraph that is saved to disc
+  vector<TGraph*> LowMassGraphs;
+  vector<TGraph*> HighMassGraphs;
+  vector<string> LowMassNames;
+  vector<string> HighMassNames;
   //These are the steps that will be taken during the beta integrations, and for the distance
   //between the points in the resulting distribution
-  const double BETASTEP = 0.05;
   //Fill an array of beta values based on the step size and range of the beta distributions
-  double betaMin = distProps.find(string("beta"))->second.axisLimits.first;
- 
-  double betaMax = distProps.find(string("beta"))->second.axisLimits.second;
-  cout << betaMin << '\t' << betaMax << endl;
-  unsigned int nPoints = TMath::Ceil((betaMax - betaMin) / BETASTEP);
-  cout << nPoints << endl;
+  
   vector<double> xPoints; //Vectors automatically order increasing from min
   for (double iP = betaMin; iP <= betaMax+BETASTEP; iP+=BETASTEP) {
-    cout << iP << endl;
     xPoints.push_back(iP);
   }
-  //START HERERERERERE
-  vector<double> yPoints;
-  TAxis *xAxis;
+
+  vector<double> LowMassYPoints;
+  vector<double> HighMassYPoints;
+  
+  TAxis *xAxis = NULL;
   int bMin, bMax;
-  double integral;
+  
   //Loop through all available masses
-  for (const auto &iMass : massCounts){
+  auto iMass = massCounts.begin();
+  auto iColor = colorList.begin();
+  auto iMarker = markerList.begin();
+  for (; iMass != massCounts.end(); ++iMass,++iColor,++iMarker){
+    bool isLowMass;
+    if (iMass->first <=800)
+      isLowMass = true;
+    else
+      isLowMass = false;
+    
     //Check to see if this mass is available with the desired charge
-    Key betaKey = Key (string("beta"), string("Gen"), (int)(3 * CHARGE), (int)iMass.first);
+    Key betaKey = Key (string("beta"), string("Gen"), (int)(3 * CHARGE), (int)iMass->first);
+
     //map.count returns zero if the item is not found. want to skip masses that are not with desired charge
-    if (distList.count(betaKey) == 0) continue;
+    
+    if (distList.count(betaKey) == 0){
+      continue;
+    }
+
     currDist = distList.find(betaKey)->second.distribution;
     xAxis = currDist->GetXaxis();
+
+    if( isLowMass ){
+      LowMassNames.push_back( fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}"));
+    }
+    else{
+      HighMassNames.push_back( fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}"));
+    }
     
     //Calculate the fraction of tracks at each point. For each point, the marker represents the fraction
     //of tracks between the previous point and the current point
-    // for (auto iPoint = xPoints.begin(); iPoint != xPoints.end(); ++iPoint) {
-    //   if (iPoint == xPoints.begin()) continue;
-    //   double Prev = *prev(iPoint,1);
-    //   bMin = xAxis->FindBin(Prev);
-    //   bMax = xAxis->FindBin(*iPoint);
-    //   integral = currDist->Integral(bMin,bMax);
-    //   // integral -= currDist->GetBinContent(bMin)*(Prev-xAxis->GetBinLowEdge(bMin))/
-    //   //   xAxis->GetBinWidth(bMin);
-    //   // integral -= currDist->GetBinContent(bMin)*(xAxis->GetBinUpEdge(bMax)-*iPoint)/
-    //   //   xAxis->GetBinWidth(bMax);
-    //   yPoints.push_back(integral);
-    // }
+    if (isLowMass)
+      LowMassYPoints.push_back(0.0);
+    else
+      HighMassYPoints.push_back(0.0);
     
-    // xPoints.shrink_to_fit();
-    // yPoints.shrink_to_fit();
-    // cout << xPoints.size() << '\t' << yPoints.size();
+    for (auto iPoint = xPoints.begin(); iPoint != xPoints.end(); ++iPoint) {
+      if (iPoint == xPoints.begin()) continue;
+      double Prev = *prev(iPoint,1);
+      bMax = xAxis->FindBin(*iPoint);
+
+      if( isLowMass ) 
+        LowMassYPoints.push_back(currDist->GetBinContent(bMax));
+      else
+        HighMassYPoints.push_back(currDist->GetBinContent(bMax));
+    }
+   
+    xPoints.shrink_to_fit();
+
+    if (isLowMass)
+      LowMassYPoints.shrink_to_fit();
+    else
+      HighMassYPoints.shrink_to_fit();
+
+    //Now have all x and y points for the current mass distribution
+    //Need to convert these vectors to TVectors for entry into
+    //TGraphs
+    TVectorD root_xPoints(xPoints.size(),&xPoints[0]);
+
+    TVectorD *root_LowMassYPoints;
+    TVectorD *root_HighMassYPoints;
+
+    if (isLowMass){
+      root_LowMassYPoints = new TVectorD(LowMassYPoints.size(),&LowMassYPoints[0]);
+      currGraph = new TGraph(root_xPoints,*root_LowMassYPoints);
+    }
+    else{
+      root_HighMassYPoints = new TVectorD(HighMassYPoints.size(),&HighMassYPoints[0]);
+      currGraph = new TGraph(root_xPoints,*root_HighMassYPoints);
+    }
+    currGraph->SetMarkerColor(*iColor);
+    currGraph->SetLineColor(*iColor);
+    currGraph->SetLineWidth(2);
+    currGraph->SetFillColorAlpha(*iColor,0.8);
+    currGraph->SetMarkerStyle(*iMarker);
+
+    if (isLowMass){
+      LowMassGraphs.push_back(currGraph);
+      LowMassYPoints.clear();
+    }
+    else{
+      HighMassGraphs.push_back(currGraph);
+      HighMassYPoints.clear();
+    }
+    
   }
-  // for (const auto &distIt : distList){
-  //   string dir = fmt::format("/{}/{}",iTypes,distIt.first.dist);
-  //   if (isGen) {
-  //     if (distIt.first.type != "Gen") continue;
-  //   }
-  //   else {
-  //     if (distIt.first.type != "Reco") continue;
-  //     }
-  //   outFile->cd(dir.c_str());
-  //   currDist = distIt.second.distribution;
-  //   currDist->Scale(norm/currDist->Integral("width"));
-  //   currDist->Draw("P");
-  //   currDist->Write();
-  // }
-  
-  delete currDist;
-  delete currGraph;
+  //Loop through the constituents, adding them to the multi
+  auto iDistLow = LowMassGraphs.begin();
+  auto iLNames = LowMassNames.begin();
+  for (; iDistLow != LowMassGraphs.end(); ++iDistLow, ++iLNames){
+    LowMassOutGraph->Add(*iDistLow,"AFC");
+    LowMassLegend->AddEntry(*iDistLow, iLNames->c_str(), "PL");
+  }
+
+  auto iDistHigh = HighMassGraphs.begin();
+  auto iHNames = HighMassNames.begin();
+  for (; iDistHigh != HighMassGraphs.end(); ++iDistHigh, ++iHNames){
+    HighMassOutGraph->Add(*iDistHigh,"AFC");
+    cout << iHNames->c_str() << endl;
+    HighMassLegend->AddEntry(*iDistHigh, iHNames->c_str(), "PL");
+  }
+
+
+  HighMassCanvas->cd();
+  HighMassOutGraph->Draw("ACP");
+  gPad->Update();
+  HighMassOutGraph->GetXaxis()->SetTitle("#beta");
+  HighMassOutGraph->GetYaxis()->SetTitle(fmt::format("Fraction of Particles/{}",BETASTEP).c_str());
+  HighMassOutGraph->SetMaximum(4.0);
+  gPad->Update();
+  HighMassLegend->Draw();
+
+  LowMassCanvas->cd();
+  LowMassOutGraph->Draw("ACP");
+  gPad->Update();
+  LowMassOutGraph->GetXaxis()->SetTitle("#beta");
+  LowMassOutGraph->GetYaxis()->SetTitle(fmt::format("Fraction of Particles/{}",BETASTEP).c_str());
+  LowMassOutGraph->SetMaximum(8.0);
+  gPad->Update();
+  LowMassLegend->Draw();
+
+
+  outFile->cd();
+  LowMassOutGraph->Write();
+  HighMassOutGraph->Write();
 }
 
 /*Main*/
 int main(int argc, char **argv){
-  //TApplication theApp("App",&argc,argv);
+  TApplication theApp("App",0,0);
 
   // gROOT->SetStyle("Pub");
   SetRootStyle();
-  gROOT->SetBatch(kTRUE); //Don't draw things when created.
+  //gROOT->SetBatch(kTRUE); //Don't draw things when created.
 
   
   string *fileList = ListOfFiles(); 
@@ -437,8 +548,8 @@ int main(int argc, char **argv){
   
   // //Number of each charge and each mass
   map<double,int> chargeCounts = fileNameData->chargeCounts;
-  map<double,int> massCounts = fileNameData->chargeCounts;
-
+  map<double,int> massCounts = fileNameData->massCounts;
+  
   distMap distList;
   vector<string> distNames = {
     "beta",
@@ -458,7 +569,7 @@ int main(int argc, char **argv){
 
   //Right now, sets the same limits and bins for both reco and gen particles.
   map<string,distProp> distProps = {
-    {"beta",{limits(0.0,1.0),200,axes("#beta","events/{}")}},
+    {"beta",{limits(0.0,1.0),20,axes("#beta","events/{}")}},
     {"energy",{limits(0,2200),200,axes("E [GeV]","events/{} GeV")}},
     {"eta",{limits(-3,3),30,axes("#eta", "events/{}")}},
     {"gamma",{limits(0,100.0),200,axes("#gamma", "events/{}")}},
@@ -553,11 +664,11 @@ int main(int argc, char **argv){
         tree->SetBranchAddress("Mass",(&gen_Mass));
         tree->SetBranchAddress("eta",(&gen_eta));
         tree->SetBranchAddress("phi",(&gen_phi));
+        tree->SetBranchAddress("PDG",&PDG);
       }
       
       for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
         tree->GetEntry(iEvt);
-
         if(isGen){
            eta = gen_eta;
            event = gen_event;
@@ -605,12 +716,6 @@ int main(int argc, char **argv){
         Key enKey (string("energy"), type, (int)(3* *charge), (int)*mass);
         distList[enKey].distribution->Fill(E);
 
-        //Calculate beta
-        beta = P / E;
-        //Fill beta distribution
-        Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
-        distList[betaKey].distribution->Fill(beta);      
-
         //Calculate gamma
         gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
 
@@ -629,6 +734,18 @@ int main(int argc, char **argv){
         //Fill the mass distribution
         Key massKey (string("mass"), type, (int)(3* *charge), (int)*mass);
         distList[massKey].distribution->Fill((Mass));
+        
+        //Calculate beta
+        beta = P / E;
+        //Fill beta distribution
+        Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
+        //Only want the gen particle HSCP's (beta !=1 or NAN)
+        if( !isGen || (TMath::Abs(PDG) != 17) )
+          continue;
+        else
+          distList[betaKey].distribution->Fill(beta);      
+
+        
           
       }//end event loop
       datFile->Close();
@@ -645,10 +762,11 @@ int main(int argc, char **argv){
   WriteStandardDistributions( outFile, types, distList );
 
   WriteGenFracTrackVsBeta(outFile, distList, massCounts, distProps);
-  //Create Ih vs P Distribution 
-  
+  //Create Ih vs P Distribution for gen, reco,
+
+  WriteIhVsP( outFile, distList, distProps );
   cout << "Finished writing to file" << endl;
   outFile->Close();
-  //theApp.Run();
+  theApp.Run();
   return 0;
 }
