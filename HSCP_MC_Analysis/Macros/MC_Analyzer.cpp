@@ -91,6 +91,16 @@ struct distProp{
 };
 
 
+struct Particle{
+  float Pt,P,Theta,Eta,Phi,E,Ih,Mass;
+  int Event,PDG;
+  Particle() : Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),Mass(0),Event(-1),PDG(-999) {}
+  Particle(const float Pt, const float P, const float Theta, const float Eta, const float Phi, const float E, const float Ih, const float Mass, const int PDG, const int Event) : Pt(Pt),P(P),Theta(Theta),Eta(Eta),Phi(Phi),E(E),Ih(Ih),Mass(Mass),PDG(PDG),Event(Event) {}
+  Particle(const Particle &arg) : Pt(arg.Pt),P(arg.P),Theta(arg.Theta),Eta(arg.Eta),Phi(arg.Phi),E(arg.E),Ih(arg.Ih),Mass(arg.Mass),PDG(arg.PDG),Event(arg.Event) {}
+};
+
+typedef map< Key, map< int, vector< Particle > > > Events;
+
 /*
   Function to insert available ROOT MC Sample files into a string array.
   Make the first entry in the array a string containing the number of 
@@ -546,11 +556,10 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
     Key pKey = Key (string("momentum"), string("Reco"), (int)(iCharge->first), MASS);
     Key ihKey = Key (string("Ih"), string("Reco"), (int)(iCharge->first), MASS);
     unsigned int NPOINTS = distList.find(pKey)->second.data.size();
-    if ( NPOINTS < 20 ){
+    if ( NPOINTS < 100 ){
       cout << fmt::format("Bad file at mchamp{}_M_{}",iCharge->first,MASS) << endl;
       continue;
     }
-    cout << NPOINTS << endl;
     //map.count returns zero if the item is not found. want to skip masses that are not with desired charge  
     if (distList.count(pKey) == 0){
       continue;
@@ -592,10 +601,12 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   outCanvas->Print("IhVsP.pdf","pdf");
 }
 
-//NEED TO MATCH PARTICLES FOR THESE
+//NEED TO MATCH PARTICLES FOR THESE??? 
+
+void WritePrecoVsPgen(){}
 //Reco Pt(scaled by 1/Q) div Gen Pt vs Q for a given mass
 //Reco beta div gen beta vs Q for a given mass
-
+                      
 /*Main*/
 int main(int argc, char **argv){
   TApplication theApp("App",0,0);
@@ -622,8 +633,11 @@ int main(int argc, char **argv){
   // //Number of each charge and each mass
   map<double,int> chargeCounts = fileNameData->chargeCounts;
   map<double,int> massCounts = fileNameData->massCounts;
-  
+
   distMap distList;
+
+  Events events;
+  
   vector<string> distNames = {
     "beta",
     "energy",
@@ -659,7 +673,7 @@ int main(int argc, char **argv){
 
   vector<string> types = {"Gen","Reco"};
   
-  AllocateDistributions(distList,charges,masses,numFiles,distNames,distProps, types);
+  AllocateDistributions(distList,charges,masses,numFiles,distNames,distProps,types);
 
   //Pointer for the tree being read
   TTree *tree;
@@ -823,6 +837,12 @@ int main(int argc, char **argv){
         
         //Calculate beta
         beta = P / E;
+
+        //Create a particle to contain the information.
+        //Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),Mass(0),Event(-1),PDG(-999) {}
+        Key particleKey (string("particle"), type, (int)(3* *charge), (int)*mass);
+        events[particleKey][(int)event].push_back(Particle(Pt,P,theta,eta,phi,E,Ih,Mass,PDG,event));
+        
         //Fill beta distribution
         Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
         //Only want the gen particle HSCP's 
@@ -832,9 +852,7 @@ int main(int argc, char **argv){
           distList[betaKey].distribution->Fill( beta );
           distList[betaKey].data.push_back( beta );
         }
-
         
-          
       }//end event loop
       datFile->Close();
     }//end file loop
@@ -855,6 +873,15 @@ int main(int argc, char **argv){
 
   //WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const map<string,distProp> &distProps){
   WriteIhVsP( outFile, distList, chargeCounts, distProps );
+
+
+  for(const auto &iKey : events){
+    for(const auto &iEvt : iKey.second){
+      for(const auto &iPart : iEvt.second){
+        cout << iPart.Event << endl;
+      }
+    }
+  }
 
   
   cout << "Finished writing to file" << endl;
