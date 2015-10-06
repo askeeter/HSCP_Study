@@ -41,6 +41,8 @@
 #include <TAxis.h>
 #include <TLegend.h>
 #include <THStack.h>
+#include <TLine.h>
+#include <TF1.h>
 
 using namespace std;
   
@@ -358,56 +360,38 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
 
   const double CHARGE = 1.0; //Desired constant charge for the plots, in units of actual charge (not e/3)
 
-  int nBins = distProps.find(string("beta"))->second.nBins;
-  double betaMin = distProps.find(string("beta"))->second.axisLimits.first; 
-  double betaMax = distProps.find(string("beta"))->second.axisLimits.second;
-  double BETASTEP = (betaMax-betaMin)/nBins; //change to math limits and step in main
+  double per = (distProps[string("beta")].axisLimits.second -
+                distProps[string("beta")].axisLimits.first)/
+    distProps[string("beta")].nBins;
   
-  unsigned int nPoints = TMath::Ceil((betaMax - betaMin) / BETASTEP);
-  
-  TMultiGraph *LowMassOutGraph = new TMultiGraph("LowMassfracPart_beta","LowMassfracPart_beta");
+  THStack *LowMassOutStack = new THStack("LowMassfracPart_beta","");
   TLegend *LowMassLegend = new TLegend(0.2,0.65,0.5,0.85);
   //LowMassLegend->SetTextFont(72);
   LowMassLegend->SetTextSize(0.025);
   LowMassLegend->SetFillColor(0);
-  TCanvas *LowMassCanvas = new TCanvas("low","low",500,500);
+  TCanvas *LowMassCanvas = new TCanvas("low","low",2000,2000);
                                        
-  TMultiGraph *HighMassOutGraph = new TMultiGraph("HighMassfracPart_beta","HighMassfracPart_beta");
-  TLegend *HighMassLegend = new TLegend(0.5,0.75,0.78,0.90);
-  //HighMassLegend->SetTextFont(72);
+  THStack *HighMassOutStack = new THStack("HighMassfracPart_beta","");
+  TLegend *HighMassLegend = new TLegend(0.2,0.65,0.5,0.85);
+  //LowMassLegend->SetTextFont(72);
   HighMassLegend->SetTextSize(0.025);
   HighMassLegend->SetFillColor(0);
-  TCanvas *HighMassCanvas = new TCanvas("high","high",500,500);
+  TCanvas *HighMassCanvas = new TCanvas("high","high",2000,2000);
   
   TH1F *currDist = NULL;
-  TGraph *currGraph = NULL;
   const double NORM = 1;
 
   //Make a vector of TGraph objects whose constituents will compose the TMultiGraph that is saved to disc
-  vector<TGraph*> LowMassGraphs;
-  vector<TGraph*> HighMassGraphs;
+  vector<TH1F*> LowMassDists;
+  vector<TH1F*> HighMassDists;
   vector<string> LowMassNames;
   vector<string> HighMassNames;
-  //These are the steps that will be taken during the beta integrations, and for the distance
-  //between the points in the resulting distribution
-  //Fill an array of beta values based on the step size and range of the beta distributions
-  
-  vector<double> xPoints; //Vectors automatically order increasing from min
-  for (double iP = betaMin; iP <= betaMax+BETASTEP; iP+=BETASTEP) {
-    xPoints.push_back(iP);
-  }
-
-  vector<double> LowMassYPoints;
-  vector<double> HighMassYPoints;
-  
-  TAxis *xAxis = NULL;
-  int bMin, bMax;
-  
+    
   //Loop through all available masses
   auto iMass = massCounts.begin();
   auto iColor = colorList.begin();
   auto iMarker = markerList.begin();
-  for (; iMass != massCounts.end(); ++iMass,++iColor,++iMarker){
+  for (; iMass != massCounts.end(); ++iMass){
     bool isLowMass;
     if (iMass->first <=800)
       isLowMass = true;
@@ -418,123 +402,55 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
     Key betaKey = Key (string("beta"), string("Gen"), (int)(3 * CHARGE), (int)iMass->first);
 
     //map.count returns zero if the item is not found. want to skip masses that are not with desired charge
-    
     if (distList.count(betaKey) == 0){
       continue;
     }
 
     currDist = distList.find(betaKey)->second.distribution;
-    xAxis = currDist->GetXaxis();
-
+    currDist->Scale(NORM/currDist->Integral());
+    currDist->SetMarkerStyle(*iMarker);
+    currDist->SetFillColorAlpha(*iColor,0.75);
+    
+    
     if( isLowMass ){
-      LowMassNames.push_back( fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}"));
+      LowMassLegend->AddEntry(currDist,(fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}")).c_str());
+      LowMassOutStack->Add(currDist);
     }
     else{
-      HighMassNames.push_back( fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}"));
+      HighMassLegend->AddEntry(currDist,(fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}")).c_str());
+      HighMassOutStack->Add(currDist);
     }
-    
-    //Calculate the fraction of tracks at each point. For each point, the marker represents the fraction
-    //of tracks between the previous point and the current point
-    if (isLowMass)
-      LowMassYPoints.push_back(0.0);
-    else
-      HighMassYPoints.push_back(0.0);
-    
-    for (auto iPoint = xPoints.begin(); iPoint != xPoints.end(); ++iPoint) {
-      if (iPoint == xPoints.begin()) continue;
-      double Prev = *prev(iPoint,1);
-      bMax = xAxis->FindBin(*iPoint);
 
-      if( isLowMass ) 
-        LowMassYPoints.push_back(currDist->GetBinContent(bMax));
-      else
-        HighMassYPoints.push_back(currDist->GetBinContent(bMax));
-    }
-   
-    xPoints.shrink_to_fit();
-
-    if (isLowMass)
-      LowMassYPoints.shrink_to_fit();
-    else
-      HighMassYPoints.shrink_to_fit();
-
-    //Now have all x and y points for the current mass distribution
-    //Need to convert these vectors to TVectors for entry into
-    //TGraphs
-    TVectorD root_xPoints(xPoints.size(),&xPoints[0]);
-
-    TVectorD *root_LowMassYPoints;
-    TVectorD *root_HighMassYPoints;
-
-    if (isLowMass){
-      root_LowMassYPoints = new TVectorD(LowMassYPoints.size(),&LowMassYPoints[0]);
-      currGraph = new TGraph(root_xPoints,*root_LowMassYPoints);
-    }
-    else{
-      root_HighMassYPoints = new TVectorD(HighMassYPoints.size(),&HighMassYPoints[0]);
-      currGraph = new TGraph(root_xPoints,*root_HighMassYPoints);
-    }
-    currGraph->SetMarkerColorAlpha(*iColor,0.8);
-    currGraph->SetLineColor(*iColor);
-    currGraph->SetLineWidth(2);
-    currGraph->SetFillColorAlpha(*iColor,0.8);
-    currGraph->SetMarkerStyle(*iMarker);
-
-    if (isLowMass){
-      LowMassGraphs.push_back(currGraph);
-      LowMassYPoints.clear();
-    }
-    else{
-      HighMassGraphs.push_back(currGraph);
-      HighMassYPoints.clear();
-    }
-    
-  }
-  //Loop through the constituents, adding them to the multi
-  auto iDistLow = LowMassGraphs.begin();
-  auto iLNames = LowMassNames.begin();
-  for (; iDistLow != LowMassGraphs.end(); ++iDistLow, ++iLNames){
-    LowMassOutGraph->Add(*iDistLow,"AFC");
-    LowMassLegend->AddEntry(*iDistLow, iLNames->c_str(), "PL");
-  }
-
-  auto iDistHigh = HighMassGraphs.begin();
-  auto iHNames = HighMassNames.begin();
-  for (; iDistHigh != HighMassGraphs.end(); ++iDistHigh, ++iHNames){
-    HighMassOutGraph->Add(*iDistHigh,"AFC");
-    cout << iHNames->c_str() << endl;
-    HighMassLegend->AddEntry(*iDistHigh, iHNames->c_str(), "PL");
-  }
-
-
-  HighMassCanvas->cd();
-  HighMassOutGraph->Draw("ACP");
-  gPad->Update();
-  HighMassOutGraph->GetXaxis()->SetTitle("#beta");
-  HighMassOutGraph->GetYaxis()->SetTitle(fmt::format("Fraction of Particles/{}",BETASTEP).c_str());
-  HighMassOutGraph->SetMaximum(4.0);
-  gPad->Update();
-  HighMassLegend->Draw();
+    ++iColor;
+    ++iMarker;
+  }//File loop
 
   LowMassCanvas->cd();
-  LowMassOutGraph->Draw("ACP");
+  LowMassOutStack->Draw("C");
+  LowMassOutStack->GetYaxis()->SetTitle(fmt::format("Number of Tracks/{}",per).c_str());
+  LowMassOutStack->GetXaxis()->SetTitle("Gen #beta");
   gPad->Update();
-  LowMassOutGraph->GetXaxis()->SetTitle("#beta");
-  LowMassOutGraph->GetYaxis()->SetTitle(fmt::format("Fraction of Particles/{}",BETASTEP).c_str());
-  LowMassOutGraph->SetMaximum(8.0);
+  LowMassLegend->Draw("F");
   gPad->Update();
-  LowMassLegend->Draw();
-
-
   outFile->cd();
   LowMassCanvas->Write();
-  LowMassCanvas->Print("LowMassPartFrac.pdf","pdf");
+  LowMassCanvas->Print("LMGenFracTracVsBeta.pdf","pdf");
+
+  HighMassCanvas->cd();
+  HighMassOutStack->Draw("C");
+  HighMassOutStack->GetYaxis()->SetTitle(fmt::format("Number of Tracks/{}",per).c_str());
+  HighMassOutStack->GetXaxis()->SetTitle("Gen #beta");
+  gPad->Update();
+  HighMassLegend->Draw("F");
+  gPad->Update();
+  outFile->cd();
   HighMassCanvas->Write();
-  HighMassCanvas->Print("HighMassPartFrac.pdf","pdf");
+  HighMassCanvas->Print("HMGenFracTracVsBeta.pdf","pdf");
+  
 }
 
 
-void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const map<string,distProp> &distProps){
+void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts){
   const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
 
@@ -603,18 +519,133 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
 
 //NEED TO MATCH PARTICLES FOR THESE??? 
 
-void WritePrecoVsPgen(){}
-//Reco Pt(scaled by 1/Q) div Gen Pt vs Q for a given mass
+void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
+  const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
+  const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
+
+  const int MASS = 900; //Desired mass to vary charges over
+  THStack *outDist = new THStack("IhVsP","");
+  THStack *outDistScaled = new THStack("IhVsP_Scaled","");
+  
+  TF1 *currLine = 0;
+  TH2F *currDist, *currDistScaled= 0;
+  TLegend *distLegend = new TLegend(0.75,0.65,0.95,0.95);
+  distLegend->SetTextSize(0.025);
+  distLegend->SetFillColor(0);
+  
+  vector<string> chargeNames;
+  vector<TF1*> lines;
+  
+  //Check to see if this mass is available with the desired charge
+  auto iCharge = chargeCounts.begin();
+  auto iColor = colorList.begin();
+  for( ; iCharge!=chargeCounts.end(); iCharge++) {
+    Key recoKey (string("particle"), "Reco", (int)(iCharge->first), MASS);
+    Key genKey (string("particle"), "Gen", (int)(iCharge->first), MASS);
+    //iCharge->fisrt is in units of e/3
+    //map.count returns zero if the item is not found. want to skip masses that are not with desired charge. Also, only want files with > 200 events  
+    if (events.count(genKey) == 0 || events[recoKey].size() < 200){
+      continue;
+    }    
+    
+    chargeNames.push_back(fmt::format("Q = {}",iCharge->first));
+    
+    string name = fmt::format("{}",iCharge->first);
+    currDist = new TH2F(name.c_str(),name.c_str(),100,0,2000,100,0,2000);
+    currDist->SetFillColorAlpha(*iColor,0.75);
+    currDistScaled = currDist->Clone();
+    string function = fmt::format("(1/{})*x",(iCharge->first/3.0));
+    cout << function << endl;
+
+    currLine = new TF1(name.c_str(),function.c_str(),0,2000);
+    currLine->SetLineColor(*iColor);
+    currLine->SetLineStyle(2);
+    currLine->SetLineWidth(2);
+    lines.push_back( currLine );
+    //We want to make sure that we are only taking the ratio of reco to
+    //gen momentum for HSCP's only, and on top of that, only those HSCP's
+    //that are in the same event. So, for each Gen HSCP, we need to
+    //loop over ALL reco HSCP's that are in the same event.
+    //Get the Gen key particles
+    //typedef map< Key, map< int, vector< Particle > > > Events;
+    
+    for( const auto &iGenEvents : events[genKey] ){
+      //Get the vector of all gen particles from this event
+      auto genParticles = iGenEvents.second;
+      
+      //Loop over the gen particles from this event
+      for( const auto &iGenParticle : genParticles ){
+        //Skip all non gen HSCP from event
+        if (TMath::Abs(iGenParticle.PDG)!=17) continue;
+        for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
+          currDist->Fill(iGenParticle.Pt,iRecoParticle.Pt);
+          currDistScaled->Fill(iGenParticle.Pt,(iCharge->first/3.0)*iRecoParticle.Pt);
+        }//reco
+      }//gen
+    }//events
+   
+    outDist->Add(currDist);
+    outDistScaled->Add(currDistScaled);
+    distLegend->AddEntry(currDist, (fmt::format("Q:{}",iCharge->first).c_str()));
+    ++iColor;
+  }//file loop
+
+  TCanvas *outCanvas = new TCanvas("outcanv","outcanv",2000,2000);
+  TCanvas *outCanvasScaled = new TCanvas("outcanvS","outcanvS",2000,2000);
+  outCanvas->cd();
+  outDist->Draw("BOX1");
+  outDist->GetXaxis()->SetTitle("P_{t g} [GeV/c]");
+  outDist->GetYaxis()->SetTitle("P_{t r} [GeV/c]");
+  outDist->GetYaxis()->SetTitleOffset(1.4);
+  outDist->GetXaxis()->SetRangeUser(0,2000);
+  outDist->GetYaxis()->SetRangeUser(0,2000);
+  outDist->SetTitle("HSCP Reco Momentum Vs Gen Momentum");
+  gPad->Update();
+  //gPad->Update();
+  //Draw all of the lines
+  for( const auto &iLine : lines ){
+    iLine->Draw("SAME");
+  }
+  gPad->Update();
+  distLegend->Draw("F");
+  distLegend->SetTextAlign(22);
+  gPad->Update();
+  outFile->cd();
+  outCanvas->Write();
+  outCanvas->Print("PrVsPg.pdf","pdf");
+
+
+  outCanvasScaled->cd();
+  outDistScaled->Draw("BOX1");
+  outDistScaled->GetXaxis()->SetTitle("P_{t g} [GeV/c]");
+  outDistScaled->GetYaxis()->SetTitle("Q #times P_{t r} [GeV/c]");
+  outDistScaled->GetYaxis()->SetTitleOffset(1.4);
+  outDistScaled->GetXaxis()->SetRangeUser(0,2000);
+  outDistScaled->GetYaxis()->SetRangeUser(0,2000);
+  outDistScaled->SetTitle("HSCP Scaled Reco Momentum Vs Gen Momentum");
+  gPad->Update();
+  currLine = new TF1("45","x",0,2000);
+  currLine->SetLineColor(kYellow);
+  currLine->SetLineStyle(2);
+  currLine->SetLineWidth(2);
+  currLine->Draw("SAME");
+  gPad->Update();
+  distLegend->Draw("F");
+  distLegend->SetTextAlign(22);
+  gPad->Update();
+  outFile->cd();
+  outCanvasScaled->Write();
+  outCanvasScaled->Print("PrVsPg_Scaled.pdf","pdf");
+}
+
 //Reco beta div gen beta vs Q for a given mass
                       
 /*Main*/
 int main(int argc, char **argv){
   TApplication theApp("App",0,0);
 
-  // gROOT->SetStyle("Pub");
   SetRootStyle();
   //gROOT->SetBatch(kTRUE); //Don't draw things when created.
-
   
   string *fileList = ListOfFiles(); 
 
@@ -666,7 +697,7 @@ int main(int argc, char **argv){
     {"trans_momentum",{limits(0,2000),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
     {"theta",{limits(0,180),180,axes("#theta [deg]", "events/{} deg")}},
     {"TOF",{limits(0,7),70,axes("t [s]", "events/{} s")}},
-    {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_{r}}", "events/{}")}},
+    {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_r}", "events/{}")}},
     {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}},
     {"charge",{limits(0,40),40,axes("charge [e/3]", "events/{} e/3")}}
   };
@@ -753,6 +784,8 @@ int main(int argc, char **argv){
         tree->SetBranchAddress("phi",(&gen_phi));
         tree->SetBranchAddress("PDG",&PDG);
       }
+
+      vector<Particle> partVec;
       
       for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
         tree->GetEntry(iEvt);
@@ -780,37 +813,37 @@ int main(int argc, char **argv){
         //Fill the theta distribution
         Key thetaKey (string("theta"), type, (int)(3* *charge), (int)*mass);
         distList[thetaKey].distribution->Fill(thetaDeg);
-        distList[thetaKey].data.push_back(thetaDeg);
+        distList.find(thetaKey)->second.data.push_back(thetaDeg);
         
         //fill the eta distribution
         Key etaKey (string("eta"), type, (int)(3* *charge), (int)*mass);
         distList[etaKey].distribution->Fill((eta));
-        distList[etaKey].data.push_back(eta);
+        distList.find(etaKey)->second.data.push_back(eta);
 
         //fill the phi distribution
         Key phiKey (string("phi"), type, (int)(3* *charge), (int)*mass);
         phi *= (180.0/TMath::Pi());
         distList[phiKey].distribution->Fill( phi );
-        distList[phiKey].data.push_back(phi);
+        distList.find(phiKey)->second.data.push_back(phi);
       
         //Calculate Momentum from transverse and theta (rad)
         P = (Pt) / TMath::Sin(theta);
         //Fill momentum distribution
         Key pKey (string("momentum"), type, (int)(3* *charge), (int)*mass);
         distList[pKey].distribution->Fill(P);
-        distList[pKey].data.push_back(P);
+        distList.find(pKey)->second.data.push_back(P);
 
         //Fill the transverse momentum distribution
         Key ptKey (string("trans_momentum"), type, (int)(3* *charge), (int)*mass);
         distList[ptKey].distribution->Fill( Pt );
-        distList[ptKey].data.push_back( Pt );
+        distList.find(ptKey)->second.data.push_back(Pt);
       
         //Calculate the relativistic energy
         E = TMath::Sqrt( P*P + TMath::Power(Mass,2) );
         //Fill the energy distribution
         Key enKey (string("energy"), type, (int)(3* *charge), (int)*mass);
         distList[enKey].distribution->Fill(E);
-        distList[enKey].data.push_back( E );
+        distList.find(enKey)->second.data.push_back(E);
 
         //Calculate gamma
         gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
@@ -818,22 +851,22 @@ int main(int argc, char **argv){
         //Fill the gamma distribution
         Key gammaKey (string("gamma"), type, (int)(3* *charge), (int)*mass);
         distList[gammaKey].distribution->Fill(gamma);
-        distList[gammaKey].data.push_back( gamma );
+        distList.find(gammaKey)->second.data.push_back(gamma);
 
         //Fill the Ih distribution
         Key ihKey (string("Ih"), type, (int)(3* *charge), (int)*mass);
         distList[ihKey].distribution->Fill( Ih );
-        distList[ihKey].data.push_back( Ih );
+        distList.find(ihKey)->second.data.push_back(Ih);
 
         //Fill the tof key
         Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
         distList[tofKey].distribution->Fill( TOF );
-        distList[tofKey].data.push_back( TOF );
+        distList.find(tofKey)->second.data.push_back(TOF);
 
         //Fill the mass distribution
         Key massKey (string("mass"), type, (int)(3* *charge), (int)*mass);
         distList[massKey].distribution->Fill( Mass );
-        distList[massKey].data.push_back( Mass );
+        distList.find(massKey)->second.data.push_back(Mass);
         
         //Calculate beta
         beta = P / E;
@@ -842,17 +875,16 @@ int main(int argc, char **argv){
         //Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),Mass(0),Event(-1),PDG(-999) {}
         Key particleKey (string("particle"), type, (int)(3* *charge), (int)*mass);
         events[particleKey][(int)event].push_back(Particle(Pt,P,theta,eta,phi,E,Ih,Mass,PDG,event));
-        
         //Fill beta distribution
         Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
         //Only want the gen particle HSCP's 
-        if( !isGen || (TMath::Abs(PDG) != 17) )
+        if( !isGen || (TMath::Abs(PDG) != 17) ){
           continue;
+        }
         else{
           distList[betaKey].distribution->Fill( beta );
-          distList[betaKey].data.push_back( beta );
+          distList.find(betaKey)->second.data.push_back(beta);
         }
-        
       }//end event loop
       datFile->Close();
     }//end file loop
@@ -868,21 +900,13 @@ int main(int argc, char **argv){
   WriteStandardDistributions( outFile, types, distList );
 
   WriteGenFracTrackVsBeta(outFile, distList, massCounts, distProps);
+
   //Create Ih vs P Distribution for gen, reco,
+  WriteIhVsP( outFile, distList, chargeCounts );
 
-
-  //WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const map<string,distProp> &distProps){
-  WriteIhVsP( outFile, distList, chargeCounts, distProps );
-
-
-  for(const auto &iKey : events){
-    for(const auto &iEvt : iKey.second){
-      for(const auto &iPart : iEvt.second){
-        cout << iPart.Event << endl;
-      }
-    }
-  }
-
+  //Create the PReco/Q vs PGen plot
+  //void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
+  WritePrecoVsPgen( outFile, distList, chargeCounts, events );
   
   cout << "Finished writing to file" << endl;
   outFile->Close();
