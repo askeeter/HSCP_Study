@@ -43,6 +43,7 @@
 #include <THStack.h>
 #include <TLine.h>
 #include <TF1.h>
+#include <TPad.h>
 
 using namespace std;
   
@@ -413,11 +414,11 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
     
     
     if( isLowMass ){
-      LowMassLegend->AddEntry(currDist,(fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}")).c_str());
+      LowMassLegend->AddEntry(currDist,(fmt::format("Q: {} M: {} GeV/",(int)(3*CHARGE),(int)iMass->first)+string("c^{2}")).c_str());
       LowMassOutStack->Add(currDist);
     }
     else{
-      HighMassLegend->AddEntry(currDist,(fmt::format("Q={}e M={} GeV/",CHARGE,(int)iMass->first)+string("c^{2}")).c_str());
+      HighMassLegend->AddEntry(currDist,(fmt::format("Q: {} M: {} GeV/",(int)(3*CHARGE),(int)iMass->first)+string("c^{2}")).c_str());
       HighMassOutStack->Add(currDist);
     }
 
@@ -483,7 +484,7 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
    
     chargeNames.push_back(fmt::format("Q={}",iCharge->first)+string("#frac{e}{3}"));
     
-    string name = fmt::format("{}",iCharge->first);
+    string name = fmt::format("Ih{}",iCharge->first);
     currGraph = new TGraph(distList.find(pKey)->second.data.size());
     currGraph->SetMarkerStyle(20);
     currGraph->SetMarkerColorAlpha(*iColor,0.8);
@@ -499,7 +500,7 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
       ++i;
     }
     outGraph->Add(currGraph);
-    distLegend->AddEntry(currGraph, (fmt::format("Q={}",iCharge->first)+string("e/3")).c_str(), "P");
+    distLegend->AddEntry(currGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
     
     ++iColor;
     
@@ -524,8 +525,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
 
   const int MASS = 900; //Desired mass to vary charges over
-  THStack *outDist = new THStack("IhVsP","");
-  THStack *outDistScaled = new THStack("IhVsP_Scaled","");
+  THStack *outDist = new THStack("PrVsPg","");
+  THStack *outDistScaled = new THStack("PrVsPg_Scaled","");
   
   TF1 *currLine = 0;
   TH2F *currDist, *currDistScaled= 0;
@@ -550,13 +551,11 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
     
     chargeNames.push_back(fmt::format("Q = {}",iCharge->first));
     
-    string name = fmt::format("{}",iCharge->first);
+    string name = fmt::format("P{}",iCharge->first);
     currDist = new TH2F(name.c_str(),name.c_str(),100,0,2000,100,0,2000);
     currDist->SetFillColorAlpha(*iColor,0.75);
     currDistScaled = currDist->Clone();
     string function = fmt::format("(1/{})*x",(iCharge->first/3.0));
-    cout << function << endl;
-
     currLine = new TF1(name.c_str(),function.c_str(),0,2000);
     currLine->SetLineColor(*iColor);
     currLine->SetLineStyle(2);
@@ -586,12 +585,12 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
    
     outDist->Add(currDist);
     outDistScaled->Add(currDistScaled);
-    distLegend->AddEntry(currDist, (fmt::format("Q:{}",iCharge->first).c_str()));
+    distLegend->AddEntry(currDist, (fmt::format("Q: {} M: {} GeV/",iCharge->first,MASS)+string("c^{2}")).c_str());
     ++iColor;
   }//file loop
 
-  TCanvas *outCanvas = new TCanvas("outcanv","outcanv",2000,2000);
-  TCanvas *outCanvasScaled = new TCanvas("outcanvS","outcanvS",2000,2000);
+  TCanvas *outCanvas = new TCanvas("Poutcanv","Poutcanv",2000,2000);
+  TCanvas *outCanvasScaled = new TCanvas("PoutcanvS","PoutcanvS",2000,2000);
   outCanvas->cd();
   outDist->Draw("BOX1");
   outDist->GetXaxis()->SetTitle("P_{t g} [GeV/c]");
@@ -639,7 +638,86 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
 }
 
 //Reco beta div gen beta vs Q for a given mass
-                      
+void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
+  const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
+  const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
+
+  const int MASS = 900; //Desired mass to vary charges over
+  vector<TH2F*> outDists;
+  vector<TCanvas*> outCanvases;
+  vector<string> chargeNames;
+  
+  TH2F *currDist = 0;
+  
+  
+  
+  //Check to see if this mass is available with the desired charge
+  auto iCharge = chargeCounts.begin();
+  auto iColor = colorList.begin();
+  for( ; iCharge!=chargeCounts.end(); iCharge++) {
+    Key recoKey (string("particle"), "Reco", (int)(iCharge->first), MASS);
+    Key genKey (string("particle"), "Gen", (int)(iCharge->first), MASS);
+    //iCharge->fisrt is in units of e/3
+    //map.count returns zero if the item is not found. want to skip masses that are not with desired charge. Also, only want files with > 200 HSCPs
+    if (events.count(genKey) == 0 || events[recoKey].size() < 200){
+      continue;
+    }    
+    
+    chargeNames.push_back(fmt::format("{}",iCharge->first));
+    
+    string name = fmt::format("Beta_Q_{}_M_{}",iCharge->first,MASS);
+    currDist = new TH2F(name.c_str(),name.c_str(),50,0,1.2,50,0,1.2);
+    currDist->SetFillColorAlpha(*iColor,0.75);
+    
+    for( const auto &iGenEvents : events[genKey] ){
+      //Get the vector of all gen particles from this event
+      auto genParticles = iGenEvents.second;
+      //Loop over the gen particles from this event
+      for( const auto &iGenParticle : genParticles ){
+        //Skip all non gen HSCP from event
+        if (TMath::Abs(iGenParticle.PDG)!=17) continue;
+        for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
+          currDist->Fill(iGenParticle.P/iGenParticle.E,iRecoParticle.P/iRecoParticle.E);
+        }//reco
+      }//gen
+    }//events
+
+    outDists.push_back(currDist);
+    outCanvases.push_back(new TCanvas(fmt::format("{}",iCharge->first).c_str(),"",2000,2000));
+    ++iColor;
+  }//file loop
+
+  auto iDists = outDists.begin();
+  auto iCanvases = outCanvases.begin();
+  auto iChargeName = chargeNames.begin();
+  for(; iDists != outDists.end(); ++iDists,++iCanvases,++iChargeName){
+    string name = fmt::format("ByVsBg_{}.pdf",(*iChargeName));
+    cout << name << endl;
+    (*iCanvases)->cd();
+    (*iDists)->Draw("colz");
+    (*iDists)->GetYaxis()->SetTitle("#beta_{r}");
+    (*iDists)->GetXaxis()->SetTitle("#beta_{g}");
+    (*iDists)->SetTitle(fmt::format("Q: {}",(*iChargeName)).c_str());
+    (*iDists)->GetYaxis()->SetTitleOffset(1.4);
+    (*iDists)->GetXaxis()->SetRangeUser(0,1.1);
+    (*iDists)->GetYaxis()->SetRangeUser(0,1.1);
+    outFile->cd();
+    (*iCanvases)->Write();
+    
+    (*iCanvases)->Print(name.c_str(),"pdf");
+}
+      
+  // outDist->Draw("BOX1");
+  
+  
+  // distLegend->Draw("F");
+  // distLegend->SetTextAlign(22);
+  //gPad->Update();
+  
+}
+
+
+
 /*Main*/
 int main(int argc, char **argv){
   TApplication theApp("App",0,0);
@@ -907,6 +985,9 @@ int main(int argc, char **argv){
   //Create the PReco/Q vs PGen plot
   //void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
   WritePrecoVsPgen( outFile, distList, chargeCounts, events );
+
+  //Same as above but for beta
+  WriteBrecoVsBgen( outFile, distList, chargeCounts, events );
   
   cout << "Finished writing to file" << endl;
   outFile->Close();
