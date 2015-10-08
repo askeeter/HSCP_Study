@@ -518,12 +518,9 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   outCanvas->Print("IhVsP.pdf","pdf");
 }
 
-//NEED TO MATCH PARTICLES FOR THESE??? 
-
 void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
   const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
-
   const int MASS = 900; //Desired mass to vary charges over
   THStack *outDist = new THStack("PrVsPg","");
   THStack *outDistScaled = new THStack("PrVsPg_Scaled","");
@@ -639,10 +636,21 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
 
 //Reco beta div gen beta vs Q for a given mass
 void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
+
+  const Int_t NRGBs = 5;
+  const Int_t NCont = 255;
+ 
+  Double_t stops[NRGBs] = { 0.00, 0.34, 0.61, 0.84, 1.00 };
+  Double_t red[NRGBs]   = { 0.00, 0.00, 0.87, 1.00, 0.51 };
+  Double_t green[NRGBs] = { 0.00, 0.81, 1.00, 0.20, 0.00 };
+  Double_t blue[NRGBs]  = { 0.51, 1.00, 0.12, 0.00, 0.00 };
+  TColor::CreateGradientColorTable(NRGBs, stops, red, green, blue, NCont);
+  gStyle->SetNumberContours(NCont);
+  
   const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
-
-  const int MASS = 900; //Desired mass to vary charges over
+  gStyle->SetPalette(54);
+  const int MASS = 300; //Desired mass to vary charges over
   vector<TH2F*> outDists;
   vector<TCanvas*> outCanvases;
   vector<string> chargeNames;
@@ -666,7 +674,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     chargeNames.push_back(fmt::format("{}",iCharge->first));
     
     string name = fmt::format("Beta_Q_{}_M_{}",iCharge->first,MASS);
-    currDist = new TH2F(name.c_str(),name.c_str(),50,0,1.2,50,0,1.2);
+    currDist = new TH2F(name.c_str(),name.c_str(),50,0,1.0,45,0,1.5);
     currDist->SetFillColorAlpha(*iColor,0.75);
     
     for( const auto &iGenEvents : events[genKey] ){
@@ -690,17 +698,29 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
   auto iDists = outDists.begin();
   auto iCanvases = outCanvases.begin();
   auto iChargeName = chargeNames.begin();
+  TF1 *currLine;
+  currLine = new TF1("45","x",0,1);
+  currLine->SetLineColor(kBlack);
+  currLine->SetLineStyle(2);
+  currLine->SetLineWidth(2);
   for(; iDists != outDists.end(); ++iDists,++iCanvases,++iChargeName){
     string name = fmt::format("ByVsBg_{}.pdf",(*iChargeName));
     cout << name << endl;
     (*iCanvases)->cd();
+    (*iDists)->Scale(1.0/(*iDists)->Integral());
+    //gPad->SetLogz();
+    gPad->SetLeftMargin(0.15);
+    gPad->SetRightMargin(0.15);
+    gPad->SetTopMargin(0.10);
+    gPad->SetBottomMargin(0.10);
     (*iDists)->Draw("colz");
     (*iDists)->GetYaxis()->SetTitle("#beta_{r}");
     (*iDists)->GetXaxis()->SetTitle("#beta_{g}");
     (*iDists)->SetTitle(fmt::format("Q: {}",(*iChargeName)).c_str());
     (*iDists)->GetYaxis()->SetTitleOffset(1.4);
-    (*iDists)->GetXaxis()->SetRangeUser(0,1.1);
-    (*iDists)->GetYaxis()->SetRangeUser(0,1.1);
+    (*iDists)->GetXaxis()->SetRangeUser(0,1.0);
+    (*iDists)->GetYaxis()->SetRangeUser(0,1.5);
+    currLine->Draw("SAME");
     outFile->cd();
     (*iCanvases)->Write();
     
@@ -715,6 +735,8 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
   //gPad->Update();
   
 }
+
+
 
 
 
@@ -757,15 +779,14 @@ int main(int argc, char **argv){
     "phi",
     "trans_momentum",
     "theta",
-    "TOF",
     "TOFdivTRel",
     "mass",
-    "charge"
+    "charge",
   };
 
   //Right now, sets the same limits and bins for both reco and gen particles.
   map<string,distProp> distProps = {
-    {"beta",{limits(0.0,1.0),20,axes("#beta","events/{}")}},
+    {"beta",{limits(0.0,1.5),45,axes("#beta","events/{}")}},
     {"energy",{limits(0,2200),200,axes("E [GeV]","events/{} GeV")}},
     {"eta",{limits(-3,3),30,axes("#eta", "events/{}")}},
     {"gamma",{limits(0,100.0),200,axes("#gamma", "events/{}")}},
@@ -774,8 +795,7 @@ int main(int argc, char **argv){
     {"phi",{limits(-200,200),100,axes("#phi [deg]", "events/{} deg")}},
     {"trans_momentum",{limits(0,2000),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
     {"theta",{limits(0,180),180,axes("#theta [deg]", "events/{} deg")}},
-    {"TOF",{limits(0,7),70,axes("t [s]", "events/{} s")}},
-    {"TOFdivTRel",{limits(0.9,1.0),200,axes("#frac{t}{t_r}", "events/{}")}},
+    {"TOFdivTRel",{limits(0.5,2.0),200,axes("#frac{t_r}{t_g}", "events/{}")}},
     {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}},
     {"charge",{limits(0,40),40,axes("charge [e/3]", "events/{} e/3")}}
   };
@@ -796,7 +816,6 @@ int main(int argc, char **argv){
   float P;
   float I;
   float Ih; //This is the energy deposition that we are interested in 
-  float TOF; 
   float reco_Mass;
   double gen_Mass;
   float dZ, dXY, dR;
@@ -936,11 +955,7 @@ int main(int argc, char **argv){
         distList[ihKey].distribution->Fill( Ih );
         distList.find(ihKey)->second.data.push_back(Ih);
 
-        //Fill the tof key
-        Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
-        distList[tofKey].distribution->Fill( TOF );
-        distList.find(tofKey)->second.data.push_back(TOF);
-
+       
         //Fill the mass distribution
         Key massKey (string("mass"), type, (int)(3* *charge), (int)*mass);
         distList[massKey].distribution->Fill( Mass );
@@ -988,6 +1003,9 @@ int main(int argc, char **argv){
 
   //Same as above but for beta
   WriteBrecoVsBgen( outFile, distList, chargeCounts, events );
+
+  //Same as above but for inverse beta
+  WriteTOFrecoVsTOFgen( outFile, distList, chargeCounts, events );
   
   cout << "Finished writing to file" << endl;
   outFile->Close();
