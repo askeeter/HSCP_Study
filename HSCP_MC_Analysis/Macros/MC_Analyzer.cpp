@@ -6,7 +6,6 @@
 #include <string>
 #include <cmath>
 #include <map>
-#include <unordered_map>
 #include <vector>
 #include <array>
 #include <iterator>
@@ -340,7 +339,7 @@ void WriteStandardDistributions( TFile *&outFile, const vector<string> &types, c
       }
       else {
         if (distIt.first.type != "Reco") continue;
-        }
+      }
       outFile->cd(dir.c_str());
       currDist = distIt.second.distribution;
       currDist->Scale(norm/currDist->Integral("width"));
@@ -649,15 +648,16 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
   
   const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
+  
   gStyle->SetPalette(54);
   const int MASS = 300; //Desired mass to vary charges over
+  
   vector<TH2F*> outDists;
   vector<TCanvas*> outCanvases;
   vector<string> chargeNames;
+
   
-  TH2F *currDist = 0;
-  
-  
+  TH2F *currBetaDist = 0;
   
   //Check to see if this mass is available with the desired charge
   auto iCharge = chargeCounts.begin();
@@ -674,8 +674,8 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     chargeNames.push_back(fmt::format("{}",iCharge->first));
     
     string name = fmt::format("Beta_Q_{}_M_{}",iCharge->first,MASS);
-    currDist = new TH2F(name.c_str(),name.c_str(),50,0,1.0,45,0,1.5);
-    currDist->SetFillColorAlpha(*iColor,0.75);
+    currBetaDist = new TH2F(name.c_str(),name.c_str(),50,0,1.0,45,0,1.5);
+    currBetaDist->SetFillColorAlpha(*iColor,0.75);
     
     for( const auto &iGenEvents : events[genKey] ){
       //Get the vector of all gen particles from this event
@@ -685,12 +685,12 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
         //Skip all non gen HSCP from event
         if (TMath::Abs(iGenParticle.PDG)!=17) continue;
         for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
-          currDist->Fill(iGenParticle.P/iGenParticle.E,iRecoParticle.P/iRecoParticle.E);
+          currBetaDist->Fill(iGenParticle.P/iGenParticle.E,iRecoParticle.P/iRecoParticle.E);
         }//reco
       }//gen
     }//events
 
-    outDists.push_back(currDist);
+    outDists.push_back(currBetaDist);
     outCanvases.push_back(new TCanvas(fmt::format("{}",iCharge->first).c_str(),"",2000,2000));
     ++iColor;
   }//file loop
@@ -725,7 +725,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     (*iCanvases)->Write();
     
     (*iCanvases)->Print(name.c_str(),"pdf");
-}
+  }
       
   // outDist->Draw("BOX1");
   
@@ -795,7 +795,7 @@ int main(int argc, char **argv){
     {"phi",{limits(-200,200),100,axes("#phi [deg]", "events/{} deg")}},
     {"trans_momentum",{limits(0,2000),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
     {"theta",{limits(0,180),180,axes("#theta [deg]", "events/{} deg")}},
-    {"TOFdivTRel",{limits(0.5,2.0),200,axes("#frac{t_r}{t_g}", "events/{}")}},
+    {"TOF",{limits(0.0,2.0),20,axes("#frac{t_r}{t_g}", "events/{}")}},
     {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}},
     {"charge",{limits(0,40),40,axes("charge [e/3]", "events/{} e/3")}}
   };
@@ -821,6 +821,7 @@ int main(int argc, char **argv){
   float dZ, dXY, dR;
   float reco_eta, reco_phi;
   double gen_eta, gen_phi;
+  float TOF;
   float theta, thetaDeg;
   float beta, gamma;
   bool hasMuon;
@@ -887,12 +888,12 @@ int main(int argc, char **argv){
       for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
         tree->GetEntry(iEvt);
         if(isGen){
-           eta = gen_eta;
-           event = gen_event;
-           Pt = gen_Pt;
-           Mass = gen_Mass;
-           eta = gen_eta;
-           phi = gen_phi;
+          eta = gen_eta;
+          event = gen_event;
+          Pt = gen_Pt;
+          Mass = gen_Mass;
+          eta = gen_eta;
+          phi = gen_phi;
         }
         else{
           eta = (float)reco_eta;
@@ -960,6 +961,7 @@ int main(int argc, char **argv){
         Key massKey (string("mass"), type, (int)(3* *charge), (int)*mass);
         distList[massKey].distribution->Fill( Mass );
         distList.find(massKey)->second.data.push_back(Mass);
+
         
         //Calculate beta
         beta = P / E;
@@ -970,13 +972,18 @@ int main(int argc, char **argv){
         events[particleKey][(int)event].push_back(Particle(Pt,P,theta,eta,phi,E,Ih,Mass,PDG,event));
         //Fill beta distribution
         Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
+        Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
         //Only want the gen particle HSCP's 
         if( !isGen || (TMath::Abs(PDG) != 17) ){
           continue;
         }
         else{
+          //Estimating the time of flight by 1/B
           distList[betaKey].distribution->Fill( beta );
           distList.find(betaKey)->second.data.push_back(beta);
+
+          distList[tofKey].distribution->Fill( 1.0 / beta );
+          distList.find(tofKey)->second.data.push_back( 1.0 / beta );
         }
       }//end event loop
       datFile->Close();
@@ -1003,9 +1010,6 @@ int main(int argc, char **argv){
 
   //Same as above but for beta
   WriteBrecoVsBgen( outFile, distList, chargeCounts, events );
-
-  //Same as above but for inverse beta
-  WriteTOFrecoVsTOFgen( outFile, distList, chargeCounts, events );
   
   cout << "Finished writing to file" << endl;
   outFile->Close();
