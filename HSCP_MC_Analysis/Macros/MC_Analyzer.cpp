@@ -764,7 +764,7 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
     
     massNames.push_back(fmt::format("{}",iMass->first));
     string name = fmt::format("BetaVsEta_Q_{}_M_{}",iMass->first,CHARGE);
-    currDist = new TH2F(name.c_str(),name.c_str(),80,-4,4,50,0,1);
+    currDist = new TH2F(name.c_str(),name.c_str(),40,-4,4,50,10,1);
     currDist->SetFillColorAlpha(*iColor,0.75);
     
     for( const auto &iGenEvents : events[genKey] ){
@@ -800,7 +800,7 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
     (*iDists)->Draw("colz");
     (*iDists)->GetYaxis()->SetTitle("#beta_{g}");
     (*iDists)->GetXaxis()->SetTitle("#eta_{g}");
-    (*iDists)->SetTitle((fmt::format("Q: {} M: {} GeV/",CHARGE,(*iMassName))+string("/c^{2}")).c_str());
+    (*iDists)->SetTitle((fmt::format("Q: {} M: {} GeV",CHARGE,(*iMassName))+string("/c^{2}")).c_str());
     (*iDists)->GetYaxis()->SetTitleOffset(1.4);
     (*iDists)->GetXaxis()->SetRangeUser(-4,4);
     (*iDists)->GetYaxis()->SetRangeUser(0,1);
