@@ -365,14 +365,14 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
     distProps[string("beta")].nBins;
   
   THStack *LowMassOutStack = new THStack("LowMassfracPart_beta","");
-  TLegend *LowMassLegend = new TLegend(0.2,0.65,0.5,0.85);
+  TLegend *LowMassLegend = new TLegend(0.1,0.65,0.5,0.85);
   //LowMassLegend->SetTextFont(72);
   LowMassLegend->SetTextSize(0.025);
   LowMassLegend->SetFillColor(0);
   TCanvas *LowMassCanvas = new TCanvas("low","low",2000,2000);
                                        
   THStack *HighMassOutStack = new THStack("HighMassfracPart_beta","");
-  TLegend *HighMassLegend = new TLegend(0.2,0.65,0.5,0.85);
+  TLegend *HighMassLegend = new TLegend(0.5,0.65,0.9,0.85);
   //LowMassLegend->SetTextFont(72);
   HighMassLegend->SetTextSize(0.025);
   HighMassLegend->SetFillColor(0);
@@ -427,7 +427,7 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
 
   LowMassCanvas->cd();
   LowMassOutStack->Draw("C");
-  LowMassOutStack->GetYaxis()->SetTitle(fmt::format("Number of Tracks/{}",per).c_str());
+  LowMassOutStack->GetYaxis()->SetTitle(fmt::format("Fraction of Tracks/{}",per).c_str());
   LowMassOutStack->GetXaxis()->SetTitle("Gen #beta");
   gPad->Update();
   LowMassLegend->Draw("F");
@@ -438,7 +438,7 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
 
   HighMassCanvas->cd();
   HighMassOutStack->Draw("C");
-  HighMassOutStack->GetYaxis()->SetTitle(fmt::format("Number of Tracks/{}",per).c_str());
+  HighMassOutStack->GetYaxis()->SetTitle(fmt::format("Fraction of Tracks/{}",per).c_str());
   HighMassOutStack->GetXaxis()->SetTitle("Gen #beta");
   gPad->Update();
   HighMassLegend->Draw("F");
@@ -459,7 +459,7 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   //TH2F *outDist; //= new TH2F("IhVsP","IhVsP",200,0,2000,70,0,35);
   TMultiGraph *outGraph = new TMultiGraph("mult","");
   TGraph* currGraph;
-  TLegend *distLegend = new TLegend(0.5,0.75,0.80,0.93);
+  TLegend *distLegend = new TLegend(0.5,0.55,0.80,0.85);
   distLegend->SetTextSize(0.025);
   distLegend->SetFillColor(0);
   
@@ -526,7 +526,7 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   
   TF1 *currLine = 0;
   TH2F *currDist, *currDistScaled= 0;
-  TLegend *distLegend = new TLegend(0.75,0.65,0.95,0.95);
+  TLegend *distLegend = new TLegend(0.65,0.65,0.95,0.95);
   distLegend->SetTextSize(0.025);
   distLegend->SetFillColor(0);
   
@@ -603,7 +603,7 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   }
   gPad->Update();
   distLegend->Draw("F");
-  distLegend->SetTextAlign(22);
+  //distLegend->SetTextAlign(22);
   gPad->Update();
   outFile->cd();
   outCanvas->Write();
@@ -633,7 +633,6 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   outCanvasScaled->Print("PrVsPg_Scaled.pdf","pdf");
 }
 
-//Reco beta div gen beta vs Q for a given mass
 void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
 
   const Int_t NRGBs = 5;
@@ -704,11 +703,10 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
   currLine->SetLineStyle(2);
   currLine->SetLineWidth(2);
   for(; iDists != outDists.end(); ++iDists,++iCanvases,++iChargeName){
-    string name = fmt::format("ByVsBg_{}.pdf",(*iChargeName));
-    cout << name << endl;
+    string name = fmt::format("BrVsBg_{}.pdf",(*iChargeName));
     (*iCanvases)->cd();
     (*iDists)->Scale(1.0/(*iDists)->Integral());
-    //gPad->SetLogz();
+    gStyle->SetOptTitle(true);
     gPad->SetLeftMargin(0.15);
     gPad->SetRightMargin(0.15);
     gPad->SetTopMargin(0.10);
@@ -716,27 +714,102 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     (*iDists)->Draw("colz");
     (*iDists)->GetYaxis()->SetTitle("#beta_{r}");
     (*iDists)->GetXaxis()->SetTitle("#beta_{g}");
-    (*iDists)->SetTitle(fmt::format("Q: {}",(*iChargeName)).c_str());
+    (*iDists)->SetTitle((fmt::format("Q: {} M: {} GeV/",(*iChargeName),MASS)+string("c^{2}")).c_str());
     (*iDists)->GetYaxis()->SetTitleOffset(1.4);
     (*iDists)->GetXaxis()->SetRangeUser(0,1.0);
     (*iDists)->GetYaxis()->SetRangeUser(0,1.5);
     currLine->Draw("SAME");
     outFile->cd();
-    (*iCanvases)->Write();
-    
+    (*iCanvases)->Write(); 
     (*iCanvases)->Print(name.c_str(),"pdf");
   }
-      
-  // outDist->Draw("BOX1");
-  
-  
-  // distLegend->Draw("F");
-  // distLegend->SetTextAlign(22);
-  //gPad->Update();
-  
 }
 
 
+void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<double,int> &massCounts, const Events &events){
+
+  const Int_t NRGBs = 5;
+  const Int_t NCont = 255;
+ 
+  Double_t stops[NRGBs] = { 0.00, 0.34, 0.61, 0.84, 1.00 };
+  Double_t red[NRGBs]   = { 0.00, 0.00, 0.87, 1.00, 0.51 };
+  Double_t green[NRGBs] = { 0.00, 0.81, 1.00, 0.20, 0.00 };
+  Double_t blue[NRGBs]  = { 0.51, 1.00, 0.12, 0.00, 0.00 };
+  TColor::CreateGradientColorTable(NRGBs, stops, red, green, blue, NCont);
+  gStyle->SetNumberContours(NCont);
+  
+  const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
+  const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
+  
+  gStyle->SetPalette(54);
+  const int CHARGE = 3; //Desired charge to vary masses over (in units of e/3)
+  
+  vector<TH2F*> outDists;
+  vector<TCanvas*> outCanvases;
+  vector<string> massNames;
+
+  TH2F *currDist = 0;
+  
+  //Check to see if this mass is available with the desired charge
+  auto iMass = massCounts.begin();
+  auto iColor = colorList.begin();
+  for( ; iMass!=massCounts.end(); iMass++) {
+    Key recoKey (string("particle"), "Reco", CHARGE, iMass->first);
+    Key genKey (string("particle"), "Gen", CHARGE, iMass->first);
+    //iCharge->fisrt is in units of e/3
+    //map.count returns zero if the item is not found. want to skip masses that are not with desired charge. Also, only want files with > 200 HSCPs
+    if (events.count(genKey) == 0 || events[recoKey].size() < 200){
+      continue;
+    }    
+    
+    massNames.push_back(fmt::format("{}",iMass->first));
+    string name = fmt::format("BetaVsEta_Q_{}_M_{}",iMass->first,CHARGE);
+    currDist = new TH2F(name.c_str(),name.c_str(),80,-4,4,50,0,1);
+    currDist->SetFillColorAlpha(*iColor,0.75);
+    
+    for( const auto &iGenEvents : events[genKey] ){
+      //Get the vector of all gen particles from this event
+      auto genParticles = iGenEvents.second;
+      //Loop over the gen particles from this event
+      for( const auto &iGenParticle : genParticles ){
+        //Skip all non gen HSCP from event
+        if (TMath::Abs(iGenParticle.PDG)!=17) continue;
+        for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
+          currDist->Fill(iGenParticle.Eta,iGenParticle.P/iGenParticle.E);
+        }//reco
+      }//gen
+    }//events
+
+    outDists.push_back(currDist);
+    outCanvases.push_back(new TCanvas(fmt::format("{}",iMass->first).c_str(),"",2000,2000));
+    ++iColor;
+  }//file loop
+
+  auto iDists = outDists.begin();
+  auto iCanvases = outCanvases.begin();
+  auto iMassName = massNames.begin();
+  
+  for(; iDists != outDists.end(); ++iDists,++iCanvases,++iMassName){
+    string name = fmt::format("BgVsEtag_{}.pdf",(*iMassName));
+    (*iCanvases)->cd();
+    (*iDists)->Scale(1.0/(*iDists)->Integral());
+    gPad->SetLeftMargin(0.15);
+    gPad->SetRightMargin(0.15);
+    gPad->SetTopMargin(0.10);
+    gPad->SetBottomMargin(0.10);
+    (*iDists)->Draw("colz");
+    (*iDists)->GetYaxis()->SetTitle("#beta_{g}");
+    (*iDists)->GetXaxis()->SetTitle("#eta_{g}");
+    (*iDists)->SetTitle((fmt::format("Q: {} M: {} GeV/",CHARGE,(*iMassName))+string("/c^{2}")).c_str());
+    (*iDists)->GetYaxis()->SetTitleOffset(1.4);
+    (*iDists)->GetXaxis()->SetRangeUser(-4,4);
+    (*iDists)->GetYaxis()->SetRangeUser(0,1);
+  
+    outFile->cd();
+    (*iCanvases)->Write(); 
+    (*iCanvases)->Print(name.c_str(),"pdf");
+  }
+}
 
 
 
@@ -779,7 +852,7 @@ int main(int argc, char **argv){
     "phi",
     "trans_momentum",
     "theta",
-    "TOFdivTRel",
+    "TOF",
     "mass",
     "charge",
   };
@@ -795,7 +868,7 @@ int main(int argc, char **argv){
     {"phi",{limits(-200,200),100,axes("#phi [deg]", "events/{} deg")}},
     {"trans_momentum",{limits(0,2000),200,axes("P_{t} [GeV/c]", "events/{} GeV/c")}},
     {"theta",{limits(0,180),180,axes("#theta [deg]", "events/{} deg")}},
-    {"TOF",{limits(0.0,2.0),20,axes("#frac{t_r}{t_g}", "events/{}")}},
+    {"TOF",{limits(0.0,4.0),20,axes("t [arb. units]", "events/{}")}},
     {"mass",{limits(0,1000),100,axes("mass [GeV/c^{2}]", "events/{} GeV/c^2")}},
     {"charge",{limits(0,40),40,axes("charge [e/3]", "events/{} e/3")}}
   };
@@ -973,6 +1046,8 @@ int main(int argc, char **argv){
         //Fill beta distribution
         Key betaKey (string("beta"), type, (int)(3* *charge), (int)*mass);
         Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
+        distList[tofKey].distribution->Fill( 1.0 / beta );
+        distList.find(tofKey)->second.data.push_back( 1.0 / beta );
         //Only want the gen particle HSCP's 
         if( !isGen || (TMath::Abs(PDG) != 17) ){
           continue;
@@ -981,9 +1056,6 @@ int main(int argc, char **argv){
           //Estimating the time of flight by 1/B
           distList[betaKey].distribution->Fill( beta );
           distList.find(betaKey)->second.data.push_back(beta);
-
-          distList[tofKey].distribution->Fill( 1.0 / beta );
-          distList.find(tofKey)->second.data.push_back( 1.0 / beta );
         }
       }//end event loop
       datFile->Close();
@@ -1010,6 +1082,9 @@ int main(int argc, char **argv){
 
   //Same as above but for beta
   WriteBrecoVsBgen( outFile, distList, chargeCounts, events );
+
+  //Beta Versus Eta
+  WriteBgenVsEtagen( outFile, distList, massCounts, events );
   
   cout << "Finished writing to file" << endl;
   outFile->Close();
