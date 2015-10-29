@@ -355,7 +355,7 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
   //Have to integrate between two beta values in order to get the fraction of particles
   //that lie between those values (assuming that the primitive distribution is normalized to unity)
   //Only want to make the plot with unity charges (key for charge = 3)
-  const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
+  const array<int,12> colorList = {1,2,3,4,6,41,34,1,2,3,4};
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
 
   const double CHARGE = 1.0; //Desired constant charge for the plots, in units of actual charge (not e/3)
@@ -372,7 +372,7 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
   TCanvas *LowMassCanvas = new TCanvas("low","low",2000,2000);
                                        
   THStack *HighMassOutStack = new THStack("HighMassfracPart_beta","");
-  TLegend *HighMassLegend = new TLegend(0.5,0.65,0.9,0.85);
+  TLegend *HighMassLegend = new TLegend(0.6,0.65,0.8,0.85);
   //LowMassLegend->SetTextFont(72);
   HighMassLegend->SetTextSize(0.025);
   HighMassLegend->SetFillColor(0);
@@ -409,9 +409,10 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
     currDist = distList.find(betaKey)->second.distribution;
     currDist->Scale(NORM/currDist->Integral());
     currDist->SetMarkerStyle(*iMarker);
-    currDist->SetFillColorAlpha(*iColor,0.75);
-    
-    
+    //currDist->SetFillColorAlpha(*iColor,0.75);
+    //currDist->SetLineColorAlpha(*iColor,0.75);
+    currDist->SetLineColor(*iColor);
+    currDist->SetLineWidth(3.0);
     if( isLowMass ){
       LowMassLegend->AddEntry(currDist,(fmt::format("Q: {} M: {} GeV/",(int)(3*CHARGE),(int)iMass->first)+string("c^{2}")).c_str());
       LowMassOutStack->Add(currDist);
@@ -426,7 +427,7 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
   }//File loop
 
   LowMassCanvas->cd();
-  LowMassOutStack->Draw("C");
+  LowMassOutStack->Draw("NOSTACK");
   LowMassOutStack->GetYaxis()->SetTitle(fmt::format("Fraction of Tracks/{}",per).c_str());
   LowMassOutStack->GetXaxis()->SetTitle("Gen #beta");
   gPad->Update();
@@ -437,8 +438,9 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
   LowMassCanvas->Print("LMGenFracTracVsBeta.pdf","pdf");
 
   HighMassCanvas->cd();
-  HighMassOutStack->Draw("C");
+  HighMassOutStack->Draw("NOSTACK");
   HighMassOutStack->GetYaxis()->SetTitle(fmt::format("Fraction of Tracks/{}",per).c_str());
+  HighMassOutStack->GetYaxis()->SetRangeUser(0.0, 0.15);
   HighMassOutStack->GetXaxis()->SetTitle("Gen #beta");
   gPad->Update();
   HighMassLegend->Draw("F");
@@ -509,6 +511,8 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   TCanvas *outCanvas = new TCanvas("IhVsP","IhVsP",500,500);
   outCanvas->cd();
   outGraph->Draw("ap");
+  outGraph->GetXaxis()->SetTitle("P [GeV/c]");
+  outGraph->GetYaxis()->SetTitle("Ih [MeV/cm]");
   gPad->Update();
   distLegend->Draw();
   gPad->Update();
@@ -589,8 +593,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   TCanvas *outCanvasScaled = new TCanvas("PoutcanvS","PoutcanvS",2000,2000);
   outCanvas->cd();
   outDist->Draw("BOX1");
-  outDist->GetXaxis()->SetTitle("P_{t g} [GeV/c]");
-  outDist->GetYaxis()->SetTitle("P_{t r} [GeV/c]");
+  outDist->GetXaxis()->SetTitle("P_{t}^{g} [GeV/c]");
+  outDist->GetYaxis()->SetTitle("P_{t}^{r} [GeV/c]");
   outDist->GetYaxis()->SetTitleOffset(1.4);
   outDist->GetXaxis()->SetRangeUser(0,2000);
   outDist->GetYaxis()->SetRangeUser(0,2000);
@@ -612,8 +616,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
 
   outCanvasScaled->cd();
   outDistScaled->Draw("BOX1");
-  outDistScaled->GetXaxis()->SetTitle("P_{t g} [GeV/c]");
-  outDistScaled->GetYaxis()->SetTitle("Q #times P_{t r} [GeV/c]");
+  outDistScaled->GetXaxis()->SetTitle("P_{t}^{g} [GeV/c]");
+  outDistScaled->GetYaxis()->SetTitle("Q #times P_{t}^{r} [GeV/c]");
   outDistScaled->GetYaxis()->SetTitleOffset(1.4);
   outDistScaled->GetXaxis()->SetRangeUser(0,2000);
   outDistScaled->GetYaxis()->SetRangeUser(0,2000);
@@ -673,7 +677,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     chargeNames.push_back(fmt::format("{}",iCharge->first));
     
     string name = fmt::format("Beta_Q_{}_M_{}",iCharge->first,MASS);
-    currBetaDist = new TH2F(name.c_str(),name.c_str(),50,0,1.0,45,0,1.5);
+    currBetaDist = new TH2F(name.c_str(),name.c_str(),100,0,1.0,100,0,1.5);
     currBetaDist->SetFillColorAlpha(*iColor,0.75);
     
     for( const auto &iGenEvents : events[genKey] ){
@@ -727,7 +731,6 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
 
 
 void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<double,int> &massCounts, const Events &events){
-
   const Int_t NRGBs = 5;
   const Int_t NCont = 255;
  
@@ -764,7 +767,7 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
     
     massNames.push_back(fmt::format("{}",iMass->first));
     string name = fmt::format("BetaVsEta_Q_{}_M_{}",iMass->first,CHARGE);
-    currDist = new TH2F(name.c_str(),name.c_str(),40,-4,4,50,10,1);
+    currDist = new TH2F(name.c_str(),name.c_str(),20,-4,4,20,10,1);
     currDist->SetFillColorAlpha(*iColor,0.75);
     
     for( const auto &iGenEvents : events[genKey] ){
