@@ -13,11 +13,31 @@
 #+LaTeX_HEADER: \lstset{tabsize=4,language=sh,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 #+LaTeX_HEADER: \lstset{tabsize=4,language=bash,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 
-* TODO Things to do [0/7]
-  - [-] Plot Ih Vs P for gen particles
-  - [-] Plot Ih Vs P for Reco particles [0/2]
-    - [-] Assuming correct charge
-    - [-] Not assuming correct charge (Correct P by multiplying by Q)
+* TODO Things to do [3/9]                                            :export:
+  - [X] Update macro to take command line argument for Cluster
+    Cleaning and Cross-Talk Inversion parameters
+  - [X] Update anything that prints or saves to include CC and CT [8/8]
+    designations.
+    - [X] ListOfFiles function to change to the appropriate directory
+    - [X] Appropriate root file name to WriteStandardDistributions
+    - [X] WriteGenFracTrackVsBeta
+    - [X] WriteIhVsP
+    - [X] WritePrecoVsPgen
+    - [X] WriteBrecoVsBgen
+    - [X] WriteBgenVsEtagen      
+    - [X] Update the output ROOT file to include a CC and CT designation
+  - [X] Plot Ih Vs P for Reco particles [2/2]
+    - [X] Assuming correct charge
+    - [X] Not assuming correct charge (Correct P by multiplying by Q)
+  - [-] Add to primitive distributions
+    - [-] recoMassCorr
+    - [-] recoMassUncorr
+    - [-] genMass
+    - [-] recoPCorr / recoPtCorr
+    - [-] recoPUncorr / recoPtUncorr
+    - [-] genP / Pt
+  - [-] Update AllocateDistributions function to exclude respective
+    gen/reco variables for reco/gen distributions, respectively
   - [-] Plot reco mass distributions [0/2]
     - [-] With knowing correct charge
     - [-] Without knowing correct charge
@@ -28,9 +48,11 @@
   - [-] Plot Beta for gen and reco particles [0/2]
     - [-] 1/TOF for reco particles
     - [-] PC/E for gen particles
-  - [-] Plot Beta reco vd beta gen [0/2]
+  - [ ] Plot Beta reco vs beta gen (1/TOF reco) (PC/E gen) [0/2]
     - [ ] Mass scan for a fixed charge
-    - [-] Charge scan for a fixed mass
+    - [ ] Charge scan for a fixed mass
+  - [-] Fix how mass is calculated. Different for gen and reco. Gen
+    just use known.
 
 * HSCP Analysis                                                      :export:
 ** File Generation
@@ -411,6 +433,30 @@
        done
      #+END_SRC
 *** Usable NTuples
+
+**** Toggling Cluster Cleaning and/or Cross-Talk Inversion
+     When creating analyzable NTuples, we (in general) would like both
+     cluster cleaning as well as cross-talk inversion to
+     enabled. However, we are not entirely positive that the
+     combination of the two, or each individually are actually
+     providing significant improvements to measurements of
+     $\frac{dE}{dx}$. As such, samples should/can be created
+     with/without both/either. To toggle either of these:
+
+     Alter lines 105-106 of:
+     =/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/Analysis_Step1_EventLoop.C=
+     Which consist of two booleans: "useClusterCleaning" and
+     "useCrossTalkInv".
+     
+     These should be set to the desired value prior to running
+     analysis Step 1. The EDM and AOD files do not need to be
+     regenerated to see these changes. Simply change the bools, then
+     follow the below instructions for "Creating by Hand".
+
+     Be careful though, as any previously ran Histos_mc... files will
+     be overwritten unless their names have been changed in the
+     Analysis_Samples.txt file.
+
 **** Creating by Hand
 
     Once we have EDM files, we are ready to create usable ROOT files
@@ -460,7 +506,7 @@
     Now that the above file has been properly edited, we simply run:
 
     #+BEGIN_SRC sh
-      Launch.py 1
+      python Launch.py 1
     #+END_SRC
 
     Which will run step 1 of the analysis code. Upon completion, the
@@ -524,7 +570,7 @@
 
      #+NAME: launch-Step-1
      #+BEGIN_SRC sh :exports code :dir /ssh:askeeter@lxplus.cern.ch:/afs/cern.ch/work/a/askeeter/private/CMSSW_7_4_4_patch4/src/SUSYBSMAnalysis/HSCP/test/AnalysisCode/
-Launch.py 1
+python Launch.py 1
      #+END_SRC
      
 *** Plots
@@ -537,6 +583,24 @@ Launch.py 1
     where your samples being analyzed are located. Then, you can
     simply run step 2 AFTER step 1.
     
+** Analysis and Derivations
+*** Mass reconstruction from $I_{h}$
+    This information is taken from [[http://www.arxiv.org/pdf/1101.1645.pdf][here]].
+
+    $I_{h}=K\left(\frac{m}{p}\right)^2+C$
+    
+    Where the values of the fit parameters are as follows:
+    $K=2.579\pm 0.001 MeV cm^{-1} c^{2}$
+    $C=2.557\pm 0.001 MeV cm^{-1}$
+
+    The above can be rearranged to solve for the mass:
+    $m=p\sqrt{\frac{I_{h}-C}{K}}$
+
+    Applying propagation of errors one obtains that:
+    $\sigma_{m}=\frac{p}{2} \left[\frac{K^{-3}\sigma^2_K+K\sigma^2_{C}}{}\right]^\frac{1}{2}$
+    Note that the momentum plugged into this formula needs to be given
+    in units of MeV/c, and the resulting error will be in units of
+    MeV/c^2. 
 * Playing around with org examples                                   :export:
 
   #+begin_src python :results file
