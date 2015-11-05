@@ -98,7 +98,7 @@ struct Particle{
   float Pt,P,Theta,Eta,Phi,E,Ih,Mass,Beta,TOF;
   int Event,PDG;
   Particle() : Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),Mass(0),Beta(0),TOF(0),Event(-1),PDG(-999) {}
-  Particle(const float Pt, const float P, const float Theta, const float Eta, const float Phi, const float E, const float Ih, const float Mass, const float Beta, const float TOF, const int PDG, const int Event) : Pt(Pt),P(P),Theta(Theta),Eta(Eta),Phi(Phi),E(E),Ih(Ih),Mass(Mass),PDG(PDG),Event(Event) {}
+  Particle(const float Pt, const float P, const float Theta, const float Eta, const float Phi, const float E, const float Ih, const float Mass, const float Beta, const float TOF, const int PDG, const int Event) : Pt(Pt),P(P),Theta(Theta),Eta(Eta),Phi(Phi),E(E),Ih(Ih),Mass(Mass),Beta(Beta),TOF(TOF),PDG(PDG),Event(Event) {}
   Particle(const Particle &arg) : Pt(arg.Pt),P(arg.P),Theta(arg.Theta),Eta(arg.Eta),Phi(arg.Phi),E(arg.E),Ih(arg.Ih),Mass(arg.Mass),Beta(arg.Beta),TOF(arg.TOF),PDG(arg.PDG),Event(arg.Event) {}
 };
 
@@ -112,8 +112,8 @@ typedef map< Key, map< int, vector< Particle > > > Events;
 
 static string *ListOfFiles(const char &CC, const char &CT){
   FILE *inStream;
-  char charnFiles[10];
-  char charFiles[10000];
+  char charnFiles[100];
+  char charFiles[100000];
   stringstream streamnFiles;
   
   //First, count how many files we will be reading
@@ -258,13 +258,14 @@ static void AllocateDistributions( distMap &argDists, const double *charges, con
   bool isGen = false;
   for( const auto &iType : types){
     for (const auto &iNames : distNames) {
-      if (isGen){
-        if (iNames == "I" || iNames == "Ih" || iNames == "dZ" || iNames == "dXY" || iNames == "dR" || iNames == "hasMuon" || iNames == "recoMassCorr" || iNames == "recoMassUncorr" || iNames == "recoPCorr" || iNames == "recoPUncorr" || iNames == "recoPtCorr" || iNames == "recoPtUncorr")
-          continue;
-      }
-      else{
-        if (iNames == "charge" || iNames == "genMass" || iNames == "genP" || iNames == "genPt") continue;
-      }
+      // if (isGen){
+      //   if (iNames == "I" || iNames == "Ih" || iNames == "dZ" || iNames == "dXY" || iNames == "dR" || iNames == "hasMuon" || iNames == "recoMassCorr" || iNames == "recoMassUncorr" || iNames == "recoPCorr" || iNames == "recoPUncorr" || iNames == "recoPtCorr" || iNames == "recoPtUncorr")
+      //     continue;
+      // }
+      // if(!isGen){
+      //   if (iNames == "charge" || iNames == "genMass" || iNames == "genP" || iNames == "genPt") continue;
+      // }
+      
       double *lowerLim = &distProps[iNames].axisLimits.first;
       double *upperLim = &distProps[iNames].axisLimits.second;
       double *nBins = &distProps[iNames].nBins;
@@ -290,6 +291,7 @@ static void AllocateDistributions( distMap &argDists, const double *charges, con
     }
   }
 }
+
 
 static void AllocateOutfile( TFile *&aFile, const vector<string> &distNames ){
   aFile->mkdir("Reco");
@@ -590,7 +592,6 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
 }
 
 
-//START HERE. VERSIONS FOR COR AND UNCOR, CHANGE KEYS
 void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events, const char &CC, const char &CT){
   const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
@@ -641,7 +642,6 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
     for( const auto &iGenEvents : events[genKey] ){
       //Get the vector of all gen particles from this event
       auto genParticles = iGenEvents.second;
-      
       //Loop over the gen particles from this event
       for( const auto &iGenParticle : genParticles ){
         //Skip all non gen HSCP from event
@@ -709,8 +709,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   outCanvasScaled->Print(PrVsPgScaledName.c_str(),"pdf");
 }
 
-void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events, const char &CC, const char &CT){
-
+void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const map<double,int> &massCounts, const Events &events, const char &CC, const char &CT){
+  //Want a mass scan and a charge scan
   const Int_t NRGBs = 5;
   const Int_t NCont = 255;
  
@@ -726,59 +726,102 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
   
   gStyle->SetPalette(54);
   const int MASS = 300; //Desired mass to vary charges over
-  
-  vector<TH2F*> outDists;
-  vector<TCanvas*> outCanvases;
-  vector<string> chargeNames;
+  const int CHARGE = 3; //Desired charge (in e/3) to vary masses over
 
-  
+  vector<TCanvas*> constMassOutCanvases;
+  vector<TCanvas*> constChargeOutCanvases;
+  vector<TH2F*> constMassOutDists;
+  vector<TH2F*> constChargeOutDists;
+  vector<string> chargeNames;
+  vector<string> massNames;
+
   TH2F *currBetaDist = 0;
   
-  //Check to see if this mass is available with the desired charge
   auto iCharge = chargeCounts.begin();
   auto iColor = colorList.begin();
+
+  /*------------------------------------------------------------------------*/
+  //Conduct the charge scan
   for( ; iCharge!=chargeCounts.end(); iCharge++) {
-    Key recoKey (string("particle"), "Reco", (int)(iCharge->first), MASS);
-    Key genKey (string("particle"), "Gen", (int)(iCharge->first), MASS);
-    //iCharge->fisrt is in units of e/3
-    //map.count returns zero if the item is not found. want to skip masses that are not with desired charge. Also, only want files with > 200 HSCPs
-    if (events.count(genKey) == 0 || events[recoKey].size() < 200){
+    Key recoKey_Q (string("particle"), "Reco", (int)(iCharge->first), MASS);
+    Key genKey_Q (string("particle"), "Gen", (int)(iCharge->first), MASS);
+
+    if (events.count(genKey_Q) == 0 || events[recoKey_Q].size() < 200){
       continue;
     }    
     
     chargeNames.push_back(fmt::format("{}",iCharge->first));
     
-    string name = fmt::format("Beta_Q_{}_M_{}",iCharge->first,MASS);
+    string name = fmt::format("Beta_Q_{}_M_{}_M",iCharge->first,MASS);
     currBetaDist = new TH2F(name.c_str(),name.c_str(),100,0,1.0,100,0,1.5);
     currBetaDist->SetFillColorAlpha(*iColor,0.75);
     
-    for( const auto &iGenEvents : events[genKey] ){
+    for( const auto &iGenEvents : events[genKey_Q] ){
       //Get the vector of all gen particles from this event
       auto genParticles = iGenEvents.second;
       //Loop over the gen particles from this event
       for( const auto &iGenParticle : genParticles ){
         //Skip all non gen HSCP from event
         if (TMath::Abs(iGenParticle.PDG)!=17) continue;
-        for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
-          currBetaDist->Fill(iGenParticle.P/iGenParticle.E,iRecoParticle.P/iRecoParticle.E);
+        for( const auto &iRecoParticle : events[recoKey_Q][iGenEvents.first] ){
+          currBetaDist->Fill(iGenParticle.Beta,iRecoParticle.Beta);
         }//reco
       }//gen
     }//events
 
-    outDists.push_back(currBetaDist);
-    outCanvases.push_back(new TCanvas(fmt::format("{}",iCharge->first).c_str(),"",2000,2000));
+    constMassOutDists.push_back(currBetaDist);
+    constMassOutCanvases.push_back(new TCanvas(fmt::format("{}",iCharge->first).c_str(),"",2000,2000)); 
     ++iColor;
-  }//file loop
+  }//charge loop
+  /*------------------------------------------------------------------------*/
+  iColor = colorList.begin();
+  auto iMass = massCounts.begin();
+  /*------------------------------------------------------------------------*/
+  //Conduct the mass scan
+  for( ; iMass!=massCounts.end(); iMass++) {
+    Key recoKey_M (string("particle"), "Reco", CHARGE, (int)(iMass->first));
+    Key genKey_M (string("particle"), "Gen", CHARGE, (int)(iMass->first));
 
-  auto iDists = outDists.begin();
-  auto iCanvases = outCanvases.begin();
+    if (events.count(genKey_M) == 0 || events[recoKey_M].size() < 200){
+      continue;
+    }    
+    
+    massNames.push_back(fmt::format("{}",iMass->first));
+    
+    string name = fmt::format("Beta_Q_{}_M_{}_Q",CHARGE,iMass->first);
+    currBetaDist = new TH2F(name.c_str(),name.c_str(),100,0,1.0,100,0,1.5);
+    currBetaDist->SetFillColorAlpha(*iColor,0.75);
+    
+    for( const auto &iGenEvents : events[genKey_M] ){
+      //Get the vector of all gen particles from this event
+      auto genParticles = iGenEvents.second;
+      //Loop over the gen particles from this event
+      for( const auto &iGenParticle : genParticles ){
+        //Skip all non gen HSCP from event
+        if (TMath::Abs(iGenParticle.PDG)!=17) continue;
+        for( const auto &iRecoParticle : events[recoKey_M][iGenEvents.first] ){
+          currBetaDist->Fill(iGenParticle.Beta,iRecoParticle.Beta);
+        }//reco
+      }//gen
+    }//events
+
+    constChargeOutDists.push_back(currBetaDist);
+    constChargeOutCanvases.push_back(new TCanvas(fmt::format("{}",iMass->first).c_str(),"",2000,2000)); 
+    ++iColor;
+  }//mass loop
+  /*------------------------------------------------------------------------*/
+  
+  /*------------------------------------------------------------------------*/
+  //Write the constant mass distributions
+  auto iDists = constMassOutDists.begin();
+  auto iCanvases = constMassOutCanvases.begin();
   auto iChargeName = chargeNames.begin();
   TF1 *currLine;
   currLine = new TF1("45","x",0,1);
   currLine->SetLineColor(kBlack);
   currLine->SetLineStyle(2);
   currLine->SetLineWidth(2);
-  for(; iDists != outDists.end(); ++iDists,++iCanvases,++iChargeName){
+  for(; iDists != constMassOutDists.end(); ++iDists,++iCanvases,++iChargeName){
     string name = fmt::format("BrVsBg_Q_{}_CC_{}_CT_{}.pdf",(*iChargeName),CC,CT);
     (*iCanvases)->cd();
     (*iDists)->Scale(1.0/(*iDists)->Integral());
@@ -799,6 +842,40 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     (*iCanvases)->Write(); 
     (*iCanvases)->Print(name.c_str(),"pdf");
   }
+  /*------------------------------------------------------------------------*/
+
+  
+  /*------------------------------------------------------------------------*/
+  //Write the constant charge distributions
+  iDists = constChargeOutDists.begin();
+  iCanvases = constChargeOutCanvases.begin();
+  auto iMassName = massNames.begin();
+  currLine = new TF1("45","x",0,1);
+  currLine->SetLineColor(kBlack);
+  currLine->SetLineStyle(2);
+  currLine->SetLineWidth(2);
+  for(; iDists != constChargeOutDists.end(); ++iDists,++iCanvases,++iMassName){
+    string name = fmt::format("BrVsBg_M_{}_CC_{}_CT_{}.pdf",(*iMassName),CC,CT);
+    (*iCanvases)->cd();
+    (*iDists)->Scale(1.0/(*iDists)->Integral());
+    gStyle->SetOptTitle(true);
+    gPad->SetLeftMargin(0.15);
+    gPad->SetRightMargin(0.15);
+    gPad->SetTopMargin(0.10);
+    gPad->SetBottomMargin(0.10);
+    (*iDists)->Draw("colz");
+    (*iDists)->GetYaxis()->SetTitle("#beta_{r}");
+    (*iDists)->GetXaxis()->SetTitle("#beta_{g}");
+    (*iDists)->SetTitle((fmt::format("Q: {} M: {} GeV/",CHARGE,(*iMassName))+string("c^{2}")).c_str());
+    (*iDists)->GetYaxis()->SetTitleOffset(1.4);
+    (*iDists)->GetXaxis()->SetRangeUser(0,1.0);
+    (*iDists)->GetYaxis()->SetRangeUser(0,1.5);
+    currLine->Draw("SAME");
+    outFile->cd();
+    (*iCanvases)->Write(); 
+    (*iCanvases)->Print(name.c_str(),"pdf");
+  }
+  /*------------------------------------------------------------------------*/
 }
 
 
@@ -831,8 +908,7 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
   for( ; iMass!=massCounts.end(); iMass++) {
     Key recoKey (string("particle"), "Reco", CHARGE, iMass->first);
     Key genKey (string("particle"), "Gen", CHARGE, iMass->first);
-    //iCharge->fisrt is in units of e/3
-    //map.count returns zero if the item is not found. want to skip masses that are not with desired charge. Also, only want files with > 200 HSCPs
+
     if (events.count(genKey) == 0 || events[recoKey].size() < 200){
       continue;
     }    
@@ -849,9 +925,7 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
       for( const auto &iGenParticle : genParticles ){
         //Skip all non gen HSCP from event
         if (TMath::Abs(iGenParticle.PDG)!=17) continue;
-        for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
-          currDist->Fill(iGenParticle.Eta,iGenParticle.P/iGenParticle.E);
-        }//reco
+        currDist->Fill(iGenParticle.Eta,iGenParticle.P/iGenParticle.E);
       }//gen
     }//events
 
@@ -860,6 +934,9 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
     ++iColor;
   }//file loop
 
+
+
+  
   auto iDists = outDists.begin();
   auto iCanvases = outCanvases.begin();
   auto iMassName = massNames.begin();
@@ -907,14 +984,14 @@ int main(int argc, char **argv){
   int numFiles = atoi(fileList[0].c_str());
 
   NameDat *fileNameData = FileNameParser( fileList, numFiles );
-  
+
   //Arrays of the charges and masses associated with each file
   double *masses = fileNameData->mass;
   double *charges = fileNameData->charge; //These are the ACTUAL charges
 
   //List of the names of the files to be opened
   fileList = fileNameData->fileNames; //Can index from 0 now
-  
+
   // //Number of each charge and each mass
   map<double,int> chargeCounts = fileNameData->chargeCounts;
   map<double,int> massCounts = fileNameData->massCounts;
@@ -943,7 +1020,7 @@ int main(int argc, char **argv){
     "recoMassUncorr",
     "charge"
   };
-
+  
   //Right now, sets the same limits and bins for both reco and gen particles.
   map<string,distProp> distProps = {
     {"beta",{limits(0,1.5),25,axes("#beta","events/{}")}},
@@ -1008,11 +1085,13 @@ int main(int argc, char **argv){
     for( int iFile = 0; iFile < numFiles; iFile++ ){
       string file = fmt::format("/home/austin/HSCP_Study/HSCP_MC_Files/CC_{}_CT_{}/",CC,CT);
       file += fileList[iFile];
+
       TFile *datFile = new TFile(file.c_str(), "READ"); //Open the current file
 
       double *charge = &charges[iFile];
       double *mass = &masses[iFile];
       string type = iTypes;
+      
       //Create a string for the appropriate file directory
       ///storage/6/work/askeeters/HSCPStudy/HSCP_Root_Files
       string fileDir;
@@ -1020,10 +1099,10 @@ int main(int argc, char **argv){
         fileDir = string(fmt::format("mchamp{}_M_{}/HscpCandidates",3*charges[iFile],masses[iFile]));
       else 
         fileDir = string(fmt::format("mchamp{}_M_{}/GENinfo",3*charges[iFile],masses[iFile]));
-
+      
       //Set the appropriate branches for the MC particles
       tree = (TTree*)datFile->Get(fileDir.c_str());
-
+      
       if (!isGen){
         tree->SetBranchAddress("I",&I);
         tree->SetBranchAddress("Ih",&Ih);
@@ -1073,11 +1152,13 @@ int main(int argc, char **argv){
         //Calculate theta
         theta = 2*TMath::ATan( TMath::Exp( -1 * (eta) ) );
         thetaDeg = theta * (180.0/TMath::Pi());
-        
+
+
         //Fill the theta distribution
         Key thetaKey (string("theta"), type, (int)(3* *charge), (int)*mass);
         distList[thetaKey].distribution->Fill(thetaDeg);
         distList.find(thetaKey)->second.data.push_back(thetaDeg);
+        
         
         //fill the eta distribution
         Key etaKey (string("eta"), type, (int)(3* *charge), (int)*mass);
@@ -1089,10 +1170,10 @@ int main(int argc, char **argv){
         phi *= (180.0/TMath::Pi());
         distList[phiKey].distribution->Fill( phi );
         distList.find(phiKey)->second.data.push_back(phi);
-      
+
         //Calculate Momentum from transverse and theta (rad)
         P = (Pt) / TMath::Sin(theta);
-        
+   
         //Fill momentum distributions
         if( !isGen ){
           Key corrPKey (string("recoPCorr"), type, (int)(3* *charge), (int)*mass);
@@ -1108,7 +1189,7 @@ int main(int argc, char **argv){
           distList[PKey].distribution->Fill( P );
           distList.find(PKey)->second.data.push_back( P );
         }
-        
+      
         //Fill the transverse momentum distribution
         if( !isGen ){
           Key corrPtKey (string("recoPtCorr"), type, (int)(3* *charge), (int)*mass);
@@ -1125,11 +1206,18 @@ int main(int argc, char **argv){
           distList.find(PtKey)->second.data.push_back( Pt );
         }
         
-      
+    
         //Calculate the relativistic energy
-        E = TMath::Sqrt( P*P + TMath::Power(Mass,2) );
+        //Calculate it correctly (known Q) for HSCP each time.
+        //No separate variable for incorrect E needed.
         //Fill the energy distribution
         Key enKey (string("energy"), type, (int)(3* *charge), (int)*mass);
+        if( !isGen ){
+          E = TMath::Sqrt( (*charge)*(*charge)*P*P + TMath::Power((float)*mass,2) );
+        }
+        else{
+          E = TMath::Sqrt( P*P + TMath::Power((float)*mass,2) );
+        }
         distList[enKey].distribution->Fill(E);
         distList.find(enKey)->second.data.push_back(E);
 
@@ -1191,6 +1279,8 @@ int main(int argc, char **argv){
         //Create a particle to contain the information.
         //Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),Mass(0),Event(-1),PDG(-999) {}
         Key particleKey (string("particle"), type, (int)(3* *charge), (int)*mass);
+        
+        //Note: here, P and Pt are NOT corrected for the reco particles, so we're okay.
         events[particleKey][(int)event].push_back(Particle(Pt,P,theta,eta,phi,E,Ih,Mass,beta,TOF,PDG,event));
         
       }//end event loop
@@ -1208,20 +1298,19 @@ int main(int argc, char **argv){
   //Loop through each standard distribution (eta,beta,gamma,etc)
   WriteStandardDistributions( outFile, types, distList );
 
-  //Create stacked beta distributions
+  // //Create stacked beta distributions
   WriteGenFracTrackVsBeta(outFile, distList, massCounts, distProps, CC, CT);
 
-  //Create Ih vs P Distribution for gen, reco,
+  // //Create Ih vs P Distribution for gen, reco,
   WriteIhVsP( outFile, distList, chargeCounts, CC, CT);
 
-  //Create the PReco/Q vs PGen plot
-  //void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events){
+  // //Create the PReco/Q vs PGen plot
   WritePrecoVsPgen( outFile, distList, chargeCounts, events, CC, CT);
 
-  //Same as above but for beta
-  WriteBrecoVsBgen( outFile, distList, chargeCounts, events, CC, CT);
+  // //Same as above but for beta
+  WriteBrecoVsBgen( outFile, distList, chargeCounts, massCounts, events, CC, CT);
 
-  //Beta Versus Eta
+  // //Beta Versus Eta
   WriteBgenVsEtagen( outFile, distList, massCounts, events, CC, CT);
 
    

@@ -13,7 +13,7 @@
 #+LaTeX_HEADER: \lstset{tabsize=4,language=sh,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 #+LaTeX_HEADER: \lstset{tabsize=4,language=bash,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 
-* TODO Things to do [3/9]                                            :export:
+* TODO Things to do [10/11]                                          :export:
   - [X] Update macro to take command line argument for Cluster
     Cleaning and Cross-Talk Inversion parameters
   - [X] Update anything that prints or saves to include CC and CT [8/8]
@@ -29,29 +29,29 @@
   - [X] Plot Ih Vs P for Reco particles [2/2]
     - [X] Assuming correct charge
     - [X] Not assuming correct charge (Correct P by multiplying by Q)
-  - [-] Add to primitive distributions
-    - [-] recoMassCorr
-    - [-] recoMassUncorr
-    - [-] genMass
-    - [-] recoPCorr / recoPtCorr
-    - [-] recoPUncorr / recoPtUncorr
-    - [-] genP / Pt
-  - [-] Update AllocateDistributions function to exclude respective
+  - [X] Add to primitive distributions
+    - [X] recoMassCorr
+    - [X] recoMassUncorr
+    - [X] genMass
+    - [X] recoPCorr / recoPtCorr
+    - [X] recoPUncorr / recoPtUncorr
+    - [X] genP / Pt
+  - [X] Update AllocateDistributions function to exclude respective
     gen/reco variables for reco/gen distributions, respectively
-  - [-] Plot reco mass distributions [0/2]
+  - [X] Plot reco mass distributions [2/2]
+    - [X] With knowing correct charge
+    - [X] Without knowing correct charge
+  - [-] Plot reco mass vs gen mass [0/2] just copy Breco Vs Bgen
     - [-] With knowing correct charge
     - [-] Without knowing correct charge
-  - [-] Plot reco mass vs gen mass [0/2]
-    - [-] With knowing correct charge
-    - [-] Without knowing correct charge
-  - [-] Plot TOF for gen particles
-  - [-] Plot Beta for gen and reco particles [0/2]
-    - [-] 1/TOF for reco particles
-    - [-] PC/E for gen particles
-  - [ ] Plot Beta reco vs beta gen (1/TOF reco) (PC/E gen) [0/2]
-    - [ ] Mass scan for a fixed charge
-    - [ ] Charge scan for a fixed mass
-  - [-] Fix how mass is calculated. Different for gen and reco. Gen
+  - [X] Plot TOF for gen particles
+  - [X] Plot Beta for gen and reco particles [2/2]
+    - [X] 1/TOF for reco particles
+    - [X] PC/E for gen particles
+  - [X] Plot Beta reco vs beta gen (1/TOF reco) (PC/E gen) [2/2]
+    - [X] Mass scan for a fixed charge
+    - [X] Charge scan for a fixed mass
+  - [X] Fix how mass is calculated. Different for gen and reco. Gen
     just use known.
 
 * HSCP Analysis                                                      :export:
