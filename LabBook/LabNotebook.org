@@ -13,7 +13,7 @@
 #+LaTeX_HEADER: \lstset{tabsize=4,language=sh,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 #+LaTeX_HEADER: \lstset{tabsize=4,language=bash,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 
-* TODO Things to do [10/11]                                          :export:
+* TODO Things to do [11/11]                                          :export:
   - [X] Update macro to take command line argument for Cluster
     Cleaning and Cross-Talk Inversion parameters
   - [X] Update anything that prints or saves to include CC and CT [8/8]
@@ -41,9 +41,10 @@
   - [X] Plot reco mass distributions [2/2]
     - [X] With knowing correct charge
     - [X] Without knowing correct charge
-  - [-] Plot reco mass vs gen mass [0/2] just copy Breco Vs Bgen
-    - [-] With knowing correct charge
-    - [-] Without knowing correct charge
+  - [X] Plot reco mass vs gen mass [2/2] (Take ratio Mr/Mg dists for
+    known and unknown)
+    - [X] With knowing correct charge
+    - [X] Without knowing correct charge
   - [X] Plot TOF for gen particles
   - [X] Plot Beta for gen and reco particles [2/2]
     - [X] 1/TOF for reco particles

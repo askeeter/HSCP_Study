@@ -95,11 +95,11 @@ struct distProp{
 
 
 struct Particle{
-  float Pt,P,Theta,Eta,Phi,E,Ih,Mass,Beta,TOF;
+  float Pt,P,Theta,Eta,Phi,E,Ih,corrMass,uncorrMass,Beta,TOF;
   int Event,PDG;
-  Particle() : Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),Mass(0),Beta(0),TOF(0),Event(-1),PDG(-999) {}
-  Particle(const float Pt, const float P, const float Theta, const float Eta, const float Phi, const float E, const float Ih, const float Mass, const float Beta, const float TOF, const int PDG, const int Event) : Pt(Pt),P(P),Theta(Theta),Eta(Eta),Phi(Phi),E(E),Ih(Ih),Mass(Mass),Beta(Beta),TOF(TOF),PDG(PDG),Event(Event) {}
-  Particle(const Particle &arg) : Pt(arg.Pt),P(arg.P),Theta(arg.Theta),Eta(arg.Eta),Phi(arg.Phi),E(arg.E),Ih(arg.Ih),Mass(arg.Mass),Beta(arg.Beta),TOF(arg.TOF),PDG(arg.PDG),Event(arg.Event) {}
+  Particle() : Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),corrMass(0),uncorrMass(0),Beta(0),TOF(0),Event(-1),PDG(-999) {}
+  Particle(const float Pt, const float P, const float Theta, const float Eta, const float Phi, const float E, const float Ih, const float corrMass, const float uncorrMass, const float Beta, const float TOF, const int PDG, const int Event) : Pt(Pt),P(P),Theta(Theta),Eta(Eta),Phi(Phi),E(E),Ih(Ih),corrMass(corrMass),uncorrMass(uncorrMass),Beta(Beta),TOF(TOF),PDG(PDG),Event(Event) {}
+  Particle(const Particle &arg) : Pt(arg.Pt),P(arg.P),Theta(arg.Theta),Eta(arg.Eta),Phi(arg.Phi),E(arg.E),Ih(arg.Ih),corrMass(arg.corrMass),uncorrMass(arg.uncorrMass),Beta(arg.Beta),TOF(arg.TOF),PDG(arg.PDG),Event(arg.Event) {}
 };
 
 typedef map< Key, map< int, vector< Particle > > > Events;
@@ -258,13 +258,6 @@ static void AllocateDistributions( distMap &argDists, const double *charges, con
   bool isGen = false;
   for( const auto &iType : types){
     for (const auto &iNames : distNames) {
-      // if (isGen){
-      //   if (iNames == "I" || iNames == "Ih" || iNames == "dZ" || iNames == "dXY" || iNames == "dR" || iNames == "hasMuon" || iNames == "recoMassCorr" || iNames == "recoMassUncorr" || iNames == "recoPCorr" || iNames == "recoPUncorr" || iNames == "recoPtCorr" || iNames == "recoPtUncorr")
-      //     continue;
-      // }
-      // if(!isGen){
-      //   if (iNames == "charge" || iNames == "genMass" || iNames == "genP" || iNames == "genPt") continue;
-      // }
       
       double *lowerLim = &distProps[iNames].axisLimits.first;
       double *upperLim = &distProps[iNames].axisLimits.second;
@@ -599,8 +592,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   THStack *outDist = new THStack("PrVsPg","");
   THStack *outDistScaled = new THStack("PrVsPg_Scaled","");
   
-  TF1 *currLine = 0;
-  TH2F *currDist, *currDistScaled= 0;
+  TF1 *currLine = NULL;
+  TH2F *currDist, *currDistScaled= NULL;
   TLegend *distLegend = new TLegend(0.65,0.65,0.95,0.95);
   distLegend->SetTextSize(0.025);
   distLegend->SetFillColor(0);
@@ -735,7 +728,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
   vector<string> chargeNames;
   vector<string> massNames;
 
-  TH2F *currBetaDist = 0;
+  TH2F *currBetaDist = NULL;
   
   auto iCharge = chargeCounts.begin();
   auto iColor = colorList.begin();
@@ -753,7 +746,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     chargeNames.push_back(fmt::format("{}",iCharge->first));
     
     string name = fmt::format("Beta_Q_{}_M_{}_M",iCharge->first,MASS);
-    currBetaDist = new TH2F(name.c_str(),name.c_str(),100,0,1.0,100,0,1.5);
+    currBetaDist = new TH2F(name.c_str(),name.c_str(),50,0,1.0,50,0,1.5);
     currBetaDist->SetFillColorAlpha(*iColor,0.75);
     
     for( const auto &iGenEvents : events[genKey_Q] ){
@@ -770,7 +763,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     }//events
 
     constMassOutDists.push_back(currBetaDist);
-    constMassOutCanvases.push_back(new TCanvas(fmt::format("{}",iCharge->first).c_str(),"",2000,2000)); 
+    constMassOutCanvases.push_back(new TCanvas(fmt::format("BrVsBg_Q_{}_MCONST",iCharge->first).c_str(),"",2000,2000)); 
     ++iColor;
   }//charge loop
   /*------------------------------------------------------------------------*/
@@ -789,7 +782,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     massNames.push_back(fmt::format("{}",iMass->first));
     
     string name = fmt::format("Beta_Q_{}_M_{}_Q",CHARGE,iMass->first);
-    currBetaDist = new TH2F(name.c_str(),name.c_str(),100,0,1.0,100,0,1.5);
+    currBetaDist = new TH2F(name.c_str(),name.c_str(),50,0,1.0,50,0,1.5);
     currBetaDist->SetFillColorAlpha(*iColor,0.75);
     
     for( const auto &iGenEvents : events[genKey_M] ){
@@ -806,7 +799,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
     }//events
 
     constChargeOutDists.push_back(currBetaDist);
-    constChargeOutCanvases.push_back(new TCanvas(fmt::format("{}",iMass->first).c_str(),"",2000,2000)); 
+    constChargeOutCanvases.push_back(new TCanvas(fmt::format("BrVsBg_M_{}_QCONST",iMass->first).c_str(),"",2000,2000)); 
     ++iColor;
   }//mass loop
   /*------------------------------------------------------------------------*/
@@ -879,6 +872,192 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
 }
 
 
+void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const map<double,int> &massCounts, const Events &events, const char &CC, const char &CT){
+  const array<int,12> qcolorList = {1,2,3,4,6,41,34,46,12,8,14,5};
+  const array<int,12> mcolorList = {1,2,3,4,6,41,34,46,12,8,14,5};
+  const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
+  
+  vector<string> Names;
+  vector<TCanvas*> outCorrCanvs, outUncorrCanvs;
+  vector<TH1F*> outCorrDists, outUncorrDists;
+  TH1F *currCorrDist, *currUncorrDist;
+
+  const int MASS = 300;
+  const int CHARGE = 3;
+
+  auto iMColor = mcolorList.begin();
+  auto iQColor = qcolorList.begin();
+  
+  //We now want to make stacked plots for constant charge with varying mass & constant mass with varying charge for both corrected and not
+  THStack *corrMassScanStack = new THStack("corrMassScanS","");
+  THStack *uncorrMassScanStack = new THStack("uncorrMassScanS","");
+  THStack *corrChargeScanStack = new THStack("corrChargeScanS","");
+  THStack *uncorrChargeScanStack = new THStack("uncorrChargeScanS","");
+
+  TCanvas *corrMassScanCanv = new TCanvas("corrMassScanC","corrMassScanC",2000,2000);
+  TCanvas *uncorrMassScanCanv = new TCanvas("uncorrMassScanC","uncorrMassScanC",2000,2000);
+  TCanvas *corrChargeScanCanv = new TCanvas("corrChargeScanC","corrChargeScanC",2000,2000);
+  TCanvas *uncorrChargeScanCanv = new TCanvas("uncorrChargeScanC","uncorrChargeScanC",2000,2000);
+
+  TLegend *corrMassScanLegend = new TLegend(0.6,0.7,0.85,0.9);
+  TLegend *uncorrMassScanLegend = new TLegend(0.6,0.7,0.85,0.9);
+  TLegend *corrChargeScanLegend = new TLegend(0.6,0.7,0.85,0.9);
+  TLegend *uncorrChargeScanLegend = new TLegend(0.6,0.7,0.85,0.9);
+
+  //Use the particles, divide by the mass in the loop, make new distributions.
+  //Take the means of these TH1Fs, plot on a multigraph, but keep these as well.
+  for(auto iMass = massCounts.begin() ; iMass!=massCounts.end(); iMass++) {
+    auto iChargeColor = qcolorList.begin();
+    for(auto iCharge = chargeCounts.begin(); iCharge!=chargeCounts.end(); iCharge++){
+      Key recoKey (string("particle"), "Reco", iCharge->first, iMass->first);
+      Key genKey (string("particle"), "Gen", iCharge->first, iMass->first);
+
+      if (events.count(genKey) == 0 || events[recoKey].size() < 200){
+        continue;
+      }    
+      string corrName = fmt::format("MrDivMg_Q_{}_M_{}Corr",iMass->first,iCharge->first);
+      string uncorrName = fmt::format("MrDivMg_Q_{}_M_{}Uncorr",iMass->first,iCharge->first);
+      
+      currCorrDist = new TH1F(corrName.c_str(),corrName.c_str(),30,0,6);
+      currUncorrDist = new TH1F(uncorrName.c_str(),uncorrName.c_str(),30,0,6);
+      
+      for( const auto &iGenEvents : events[genKey] ){
+        //Get the vector of all gen particles from this event
+        auto genParticles = iGenEvents.second;
+        //Loop over the gen particles from this event
+        for( const auto &iGenParticle : genParticles ){
+          //Skip all non gen HSCP from event
+          if (TMath::Abs(iGenParticle.PDG)!=17) continue;
+          //Now for each of these reco particles we want to compare the gen particles
+          for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
+            currCorrDist->Fill( iRecoParticle.corrMass / iMass->first );
+            currUncorrDist->Fill( iRecoParticle.uncorrMass / iMass->first );
+          }//reco
+        }//gen
+      }//events
+
+      outCorrDists.push_back(currCorrDist);
+      outUncorrDists.push_back(currUncorrDist);
+      Names.push_back( fmt::format("M_{}_Q_{}",iMass->first,iCharge->first).c_str() );
+      
+      outCorrCanvs.push_back(new TCanvas(fmt::format("M_{}_Q_{}_MrDivMgCorr",iMass->first,iCharge->first).c_str(),"",2000,2000));
+      outUncorrCanvs.push_back(new TCanvas(fmt::format("M_{}_Q_{}_MrDivMgUncorr",iMass->first,iCharge->first).c_str(),"",2000,2000));
+
+      if( iCharge->first == CHARGE ){
+        currCorrDist->SetLineColor(*iMColor);
+        corrMassScanStack->Add(currCorrDist);
+        currCorrDist->Scale(1.0/currCorrDist->Integral());
+        corrMassScanLegend->AddEntry(currCorrDist,fmt::format("M_{}_Q_{}",iMass->first,CHARGE).c_str());
+
+        currUncorrDist->SetLineColor(*iMColor);
+        uncorrMassScanStack->Add(currUncorrDist);
+        currUncorrDist->Scale(1.0/currUncorrDist->Integral());
+        uncorrMassScanLegend->AddEntry(currUncorrDist,fmt::format("M_{}_Q_{}",iMass->first,CHARGE).c_str());
+                
+        iMColor++;
+      }
+      if( iMass->first == MASS ){
+        currCorrDist->SetLineColor(*iQColor);
+        //Normalize before addin
+        corrChargeScanStack->Add(currCorrDist);
+        currCorrDist->Scale(1.0/currCorrDist->Integral());
+        corrChargeScanLegend->AddEntry(currCorrDist,fmt::format("M_{}_Q_{}",MASS,iCharge->first).c_str());
+
+        currUncorrDist->SetLineColor(*iQColor);
+        //Normalize before adding
+        uncorrChargeScanStack->Add(currUncorrDist);
+        currUncorrDist->Scale(1.0/currUncorrDist->Integral());
+        uncorrChargeScanLegend->AddEntry(currUncorrDist,fmt::format("M_{}_Q_{}",MASS,iCharge->first).c_str());
+
+        iQColor++;
+      }
+    }//charge
+  }//mass
+
+  //Write the distributions to file. Should have as many corr dists as uncorr dists
+  auto iCorrDists = outCorrDists.begin();
+  auto iCorrCanvs = outCorrCanvs.begin();
+  auto iUncorrDists = outUncorrDists.begin();
+  auto iUncorrCanvs = outUncorrCanvs.begin();
+  auto iNames = Names.begin();
+
+  string fName;
+  for( ; iCorrDists != outCorrDists.end(); iCorrDists++, iUncorrDists++, iCorrCanvs++, iUncorrCanvs++, iNames++ ){
+    (*iCorrCanvs)->cd();
+    (*iCorrDists)->Draw();
+    (*iCorrDists)->GetXaxis()->SetTitle("m_{r}^{c}/m_{g}");
+    (*iCorrDists)->GetYaxis()->SetTitle("Events/0.2");
+    (*iCorrDists)->SetTitle(iNames->c_str());
+    outFile->cd();
+    fName = string("MrVsMg") + *iNames + fmt::format("CC_{}_CT_{}_",CC,CT) +string("Corr.pdf");
+    (*iCorrCanvs)->Write();
+
+    (*iUncorrCanvs)->cd();
+    (*iUncorrDists)->Draw();
+    (*iUncorrDists)->GetXaxis()->SetTitle("m_{r}^{u}/m_{g}");
+    (*iUncorrDists)->GetYaxis()->SetTitle("Events/0.2");
+    (*iUncorrDists)->SetTitle(iNames->c_str());
+    outFile->cd();
+    fName = string("MrVsMg") + *iNames + fmt::format("CC_{}_CT_{}_",CC,CT) + string("Uncorr.pdf");
+    (*iUncorrCanvs)->Write();
+  }
+
+  //Now write the stacks
+  corrMassScanCanv->cd();
+  corrMassScanStack->Draw();
+  gPad->Update();
+  corrMassScanStack->GetXaxis()->SetTitle("m_{r}^{c}/m_{g}");
+  corrMassScanStack->GetYaxis()->SetTitle("Events/0.2");
+  corrMassScanStack->SetTitle("Corrected Mass");
+  gPad->Update();
+  corrMassScanLegend->Draw("SAME");
+  gPad->Update();
+  fName = fmt::format("MrDivMg_MScan_Q_{}_CC_{}_CT_{}_Corr.pdf",CHARGE,CC,CT);
+  outFile->cd();
+  corrMassScanCanv->Print(fName.c_str(),"pdf");
+
+  uncorrMassScanCanv->cd();
+  uncorrMassScanStack->Draw();
+  gPad->Update();
+  uncorrMassScanStack->GetXaxis()->SetTitle("m_{r}^{u}/m_{g}");
+  uncorrMassScanStack->GetYaxis()->SetTitle("Events/0.2");
+  uncorrMassScanStack->SetTitle("Uncorrected Mass");
+  gPad->Update();
+  uncorrMassScanLegend->Draw("SAME");
+  gPad->Update();
+  fName = fmt::format("MrDivMg_MScan_Q_{}_CC_{}_CT_{}_Uncorr.pdf",CHARGE,CC,CT);
+  outFile->cd();
+  uncorrMassScanCanv->Print(fName.c_str(),"pdf");
+
+  
+  corrChargeScanCanv->cd();
+  corrChargeScanStack->Draw();
+  gPad->Update();
+  corrChargeScanStack->GetXaxis()->SetTitle("m_{r}^{c}/m_{g}");
+  corrChargeScanStack->GetYaxis()->SetTitle("Events/0.2");
+  corrChargeScanStack->SetTitle("Corrected Mass");
+  gPad->Update();
+  corrChargeScanLegend->Draw("SAME");
+  gPad->Update();
+  fName = fmt::format("MrDivMg_QScan_M_{}_CC_{}_CT_{}_Corr.pdf",MASS,CC,CT);
+  outFile->cd();
+  corrChargeScanCanv->Print(fName.c_str(),"pdf");
+
+  uncorrChargeScanCanv->cd();
+  uncorrChargeScanStack->Draw();
+  gPad->Update();
+  uncorrChargeScanStack->GetXaxis()->SetTitle("m_{r}^{u}/m_{g}");
+  uncorrChargeScanStack->GetYaxis()->SetTitle("Events/0.2");
+  uncorrChargeScanStack->SetTitle("Uncorrected Mass");
+  gPad->Update();
+  uncorrChargeScanLegend->Draw("SAME");
+  gPad->Update();
+  fName = fmt::format("MrDivMg_MScan_M_{}_CC_{}_CT_{}_Uncorr.pdf",MASS,CC,CT);
+  outFile->cd();
+  uncorrChargeScanCanv->Print(fName.c_str(),"pdf");
+  
+}//Function
+
 void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<double,int> &massCounts, const Events &events, const char &CC, const char &CT){
   const Int_t NRGBs = 5;
   const Int_t NCont = 255;
@@ -900,7 +1079,7 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
   vector<TCanvas*> outCanvases;
   vector<string> massNames;
 
-  TH2F *currDist = 0;
+  TH2F *currDist = NULL;
   
   //Check to see if this mass is available with the desired charge
   auto iMass = massCounts.begin();
@@ -976,7 +1155,7 @@ int main(int argc, char **argv){
   char CT = toupper(argv[1][2]);
 
   SetRootStyle();
-  //gROOT->SetBatch(kTRUE); //Don't draw things when created.
+  gROOT->SetBatch(kTRUE); //Don't draw things when created.
   
   string *fileList = ListOfFiles(CC,CT);
   
@@ -1063,6 +1242,7 @@ int main(int argc, char **argv){
   double gen_Mass;
   float dZ, dXY, dR;
   float reco_eta, reco_phi;
+  float recoMassCorr, recoMassUncorr;
   double gen_eta, gen_phi;
   float TOF;
   float theta, thetaDeg;
@@ -1232,8 +1412,10 @@ int main(int argc, char **argv){
         if( !isGen ){
           Key corrMassKey (string("recoMassCorr"), type, (int)(3* *charge), (int)*mass);
           Key uncorrMassKey (string("recoMassUncorr"), type, (int)(3* *charge), (int)*mass);
-          float recoMassCorr = (*charge) * P * TMath::Sqrt( (Ih - 2.557) / 2.579 );
-          float recoMassUncorr = recoMassCorr / (*charge);
+          recoMassCorr = (*charge) * P * TMath::Sqrt( (Ih - 2.557) / 2.579 );
+          recoMassUncorr = P * TMath::Sqrt( (Ih - 2.557) / 2.579 );
+          //recoMassCorr = Mass * (*charge);
+          //recoMassUncorr = Mass;
           
           distList[corrMassKey].distribution->Fill( recoMassCorr );
           distList.find(corrMassKey)->second.data.push_back( recoMassCorr );
@@ -1243,8 +1425,8 @@ int main(int argc, char **argv){
         }
         else{
           Key MassKey (string("genMass"), type, (int)(3* *charge), (int)*mass);
-          distList[MassKey].distribution->Fill((float)*mass);
-          distList.find(MassKey)->second.data.push_back((float)*mass);
+          distList[MassKey].distribution->Fill(Mass);
+          distList.find(MassKey)->second.data.push_back(Mass);
         }
         
         //Fill TOF distribution
@@ -1281,8 +1463,16 @@ int main(int argc, char **argv){
         Key particleKey (string("particle"), type, (int)(3* *charge), (int)*mass);
         
         //Note: here, P and Pt are NOT corrected for the reco particles, so we're okay.
-        events[particleKey][(int)event].push_back(Particle(Pt,P,theta,eta,phi,E,Ih,Mass,beta,TOF,PDG,event));
-        
+        //Note: we have a corrected and uncorrected mass for each particle. Maybe do the same with P and Pt?
+        //Would have to change the P Vs P plot(s).
+        //Always giving the correct particle energy though (corrected mass and p)
+        if( !isGen ){
+          events[particleKey][(int)event].push_back(Particle(Pt,P,theta,eta,phi,E,Ih,recoMassCorr,recoMassUncorr,beta,TOF,PDG,event));
+        }
+        else{
+          events[particleKey][(int)event].push_back(Particle(Pt,P,theta,eta,phi,E,Ih,Mass,Mass,beta,TOF,PDG,event));
+        }
+          
       }//end event loop
       datFile->Close();
     }//end file loop
@@ -1307,13 +1497,17 @@ int main(int argc, char **argv){
   // //Create the PReco/Q vs PGen plot
   WritePrecoVsPgen( outFile, distList, chargeCounts, events, CC, CT);
 
+  // Create plots of reco mass vs gen mass. One assuming correct Q, on
+  WriteMrecoVsMgen( outFile, distList, chargeCounts, massCounts, events, CC, CT);
+
+  
   // //Same as above but for beta
   WriteBrecoVsBgen( outFile, distList, chargeCounts, massCounts, events, CC, CT);
-
+  
   // //Beta Versus Eta
   WriteBgenVsEtagen( outFile, distList, massCounts, events, CC, CT);
 
-   
+  
   cout << "Finished writing to file" << endl;
   outFile->Close();
   theApp.Run();
