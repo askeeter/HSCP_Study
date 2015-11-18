@@ -70,6 +70,13 @@ public:
   bool operator==(const Key &rhs){
     return this->dist == rhs.dist && this->charge == rhs.charge && this->mass == rhs.mass && this->type == rhs.type;
   }
+
+  void operator=(const Key &aKey){
+    this->dist = aKey.dist;
+    this->charge = aKey.charge;
+    this->mass = aKey.mass;
+    this->name = aKey.name;
+  }
   
 };
 
@@ -93,16 +100,60 @@ struct distProp{
   axes axisTitles;
 };
 
-
 struct Particle{
   float Pt,P,Theta,Eta,Phi,E,Ih,corrMass,uncorrMass,Beta,TOF;
   int Event,PDG;
   Particle() : Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),corrMass(0),uncorrMass(0),Beta(0),TOF(0),Event(-1),PDG(-999) {}
   Particle(const float Pt, const float P, const float Theta, const float Eta, const float Phi, const float E, const float Ih, const float corrMass, const float uncorrMass, const float Beta, const float TOF, const int PDG, const int Event) : Pt(Pt),P(P),Theta(Theta),Eta(Eta),Phi(Phi),E(E),Ih(Ih),corrMass(corrMass),uncorrMass(uncorrMass),Beta(Beta),TOF(TOF),PDG(PDG),Event(Event) {}
   Particle(const Particle &arg) : Pt(arg.Pt),P(arg.P),Theta(arg.Theta),Eta(arg.Eta),Phi(arg.Phi),E(arg.E),Ih(arg.Ih),corrMass(arg.corrMass),uncorrMass(arg.uncorrMass),Beta(arg.Beta),TOF(arg.TOF),PDG(arg.PDG),Event(arg.Event) {}
+
+  //Overload the assignment operator
+  void operator=(const Particle &aPart){
+    Pt = aPart.Pt;
+    P = aPart.P;
+    Theta = aPart.Theta;
+    Eta = aPart.Eta;
+    Phi = aPart.Phi;
+    E = aPart.E;
+    Ih = aPart.Ih;
+    corrMass = aPart.corrMass;
+    uncorrMass = aPart.uncorrMass;
+    Beta = aPart.Beta;
+    TOF = aPart.TOF;    
+  }
+  
 };
 
+
+// struct Match{
+//   Particle *genParticle;
+//   Particle *recoParticle;
+//   float dR, dEta, dPhi;
+//   int event;
+
+//   Match() : genParticle(NULL), recoParticle(NULL), dR(-1), dEta(-1), dPhi(-1) {}
+//   Match( const Particle &aGen, const Particle &aReco, const float &a_dR, const float &a_dEta, const float &a_dPhi, const int &a_event ){
+//     genParticle = &aGen;
+//     recoParticle = &aReco;
+//     dR = a_dR;
+//     dEta = a_dEta;
+//     dPhi = a_dPhi;
+//     event = a_event;
+//   }
+// };
+
+bool isMatch( const Particle &aPart1, const Particle &aPart2 ){
+  //Refine this later when you look at the distributions for dR
+  const float LIMIT = 0.0005;
+
+  float dR = TMath::Sqrt(TMath::Power(aPart1.Eta-aPart2.Eta,2) + TMath::Power(aPart1.Phi-aPart2.Phi,2));
+  if (dR <= LIMIT) return true;
+  else return false;
+}
+
+
 typedef map< Key, map< int, vector< Particle > > > Events;
+
 
 /*
   Function to insert available ROOT MC Sample files into a string array.
@@ -357,7 +408,8 @@ void WriteStandardDistributions( TFile *&outFile, const vector<string> &types, c
       }
       outFile->cd(dir.c_str());
       currDist = distIt.second.distribution;
-      currDist->Scale(norm/currDist->Integral("width"));
+      if (distIt.first.dist.find("Mass") == string::npos)//No mass normalization
+        currDist->Scale(norm/currDist->Integral("width"));
       //currDist->Draw("P");
       currDist->Write();
     }
@@ -466,7 +518,7 @@ void WriteGenFracTrackVsBeta(TFile *&outFile, const distMap &distList, const map
 }
 
 
-void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const char &CC, const char &CT){
+void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> &chargeCounts, const Events &events, const char &CC, const char &CT){
   const array<int,12> colorList = {1,2,3,4,6,41,34,46,12,8,14,5};
   const array<int,12> markerList = {2,3,4,5,25,26,27,20,21,22,33,34};
 
@@ -474,15 +526,19 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
 
   TMultiGraph *recoOutGraph_KnownQ = new TMultiGraph("multrecoknownq","");
   TMultiGraph *recoOutGraph_UnknownQ = new TMultiGraph("multrecounknownq","");
+  TMultiGraph *genOutGraph = new TMultiGraph("multgen","");
+  
   TGraph* currGraph;
   TLegend *recoDistLegend_KnownQ = new TLegend(0.5,0.55,0.80,0.85);
   TLegend *recoDistLegend_UnknownQ = new TLegend(0.5,0.55,0.80,0.85);
+  TLegend *genDistLegend = new TLegend(0.5,0.55,0.80,0.85);
   
   recoDistLegend_KnownQ->SetTextSize(0.025);
   recoDistLegend_KnownQ->SetFillColor(0);
   recoDistLegend_UnknownQ->SetTextSize(0.025);
   recoDistLegend_UnknownQ->SetFillColor(0);
- 
+  genDistLegend->SetTextSize(0.025);
+  genDistLegend->SetFillColor(0);
  
   vector<string> chargeNames;
 
@@ -493,7 +549,7 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
     Key corr_pKey = Key (string("recoPCorr"), string("Reco"), (int)(iCharge->first), MASS);
     Key uncorr_pKey = Key (string("recoPUncorr"), string("Reco"), (int)(iCharge->first), MASS);
     Key reco_ihKey = Key (string("Ih"), string("Reco"), (int)(iCharge->first), MASS);
-
+  
     //Reco will generally have fewer points than gen, so let's check this one
     unsigned int NPOINTS = distList.find(corr_pKey)->second.data.size();
     if ( NPOINTS < 100 ){
@@ -550,6 +606,37 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
     recoOutGraph_UnknownQ->Add(currGraph);
     recoDistLegend_UnknownQ->AddEntry(currGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
     /*--------------------------------------------------------------------*/
+    
+    /*--------------------------------------------------------------------*/
+    //Now we can compare the above two to the version below, where we use gen (absolutely correct) P, and the matched reco Ih.
+    //Will have as many points as we do reco ihs.
+    currGraph = new TGraph(distList.find(reco_ihKey)->second.data.size());
+    currGraph->SetMarkerStyle(20);
+    currGraph->SetMarkerColorAlpha(*iColor,0.8);
+    currGraph->SetMarkerSize(0.3);
+    Key recoKey (string("particle"), "Reco", (int)(iCharge->first), MASS);
+    Key genKey (string("particle"), "Gen", (int)(iCharge->first), MASS);
+    i=0;
+    //Need to loop the gen and reco particles, looking for matches
+    for( const auto &iGenEvents : events[genKey] ){
+      //Get the vector of all gen particles from this event
+      auto genParticles = iGenEvents.second;
+      //Loop over the gen particles from this event
+      for( const auto &iGenParticle : genParticles ){
+        //Skip all non gen HSCP from event
+        if (TMath::Abs(iGenParticle.PDG)!=17) continue;
+        for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
+          //Only fill the dist if we have a match between the particles
+          if (!isMatch(iGenParticle,iRecoParticle)) continue;
+          currGraph->SetPoint(i,iGenParticle.P,iRecoParticle.Ih);
+          i++;
+        }//reco
+      }//gen
+    }//events
+    genOutGraph->Add(currGraph);
+    genDistLegend->AddEntry(currGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
+    /*--------------------------------------------------------------------*/
+    
     ++iColor;    
   }
   
@@ -562,7 +649,7 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   //Write the reco level, unknown Q plot
   recoOutCanvas_UnknownQ->cd();
   recoOutGraph_UnknownQ->Draw("ap");
-  recoOutGraph_UnknownQ->SetTitle("Gen;P [GeV/c];I_{h} [MeV/cm]");
+  recoOutGraph_UnknownQ->SetTitle("reco;P_{r} [GeV/c];I_{h} [MeV/cm]");
   gPad->Update();
   recoDistLegend_UnknownQ->Draw();
   gPad->Update();
@@ -571,10 +658,10 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   string IhVsPName = fmt::format("IhVsP_CC_{}_CT_{}_RecoUnknownQ.pdf",CC,CT);
   recoOutCanvas_UnknownQ->Print(IhVsPName.c_str(),"pdf");
 
-  // //Write the reco level, known Q plot
+  //Write the reco level, known Q plot
   recoOutCanvas_KnownQ->cd();
   recoOutGraph_KnownQ->Draw("ap");
-  recoOutGraph_KnownQ->SetTitle("Gen;P [GeV/c];I_{h} [MeV/cm]");
+  recoOutGraph_KnownQ->SetTitle("reco;P_{r} [GeV/c];I_{h} [MeV/cm]");
   gPad->Update();
   recoDistLegend_KnownQ->Draw();
   gPad->Update();
@@ -582,6 +669,18 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   recoOutCanvas_KnownQ->Write();
   IhVsPName = fmt::format("IhVsP_CC_{}_CT_{}_RecoKnownQ.pdf",CC,CT);
   recoOutCanvas_KnownQ->Print(IhVsPName.c_str(),"pdf");
+
+  //Write the matched gen P plot
+  genOutCanvas->cd();
+  genOutGraph->Draw("ap");
+  genOutGraph->SetTitle("Gen;P_{g} [GeV/c];I_{h} [MeV/cm]");
+  gPad->Update();
+  genDistLegend->Draw();
+  gPad->Update();
+  outFile->cd();
+  genOutCanvas->Write();
+  IhVsPName = fmt::format("IhVsP_CC_{}_CT_{}_GenP.pdf",CC,CT);
+  genOutCanvas->Print(IhVsPName.c_str(),"pdf");
 }
 
 
@@ -640,6 +739,7 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
         //Skip all non gen HSCP from event
         if (TMath::Abs(iGenParticle.PDG)!=17) continue;
         for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
+          if( !isMatch(iGenParticle,iRecoParticle) ) continue;
           currDist->Fill(iGenParticle.Pt,iRecoParticle.Pt);
           currDistScaled->Fill(iGenParticle.Pt,(iCharge->first/3.0)*iRecoParticle.Pt);
         }//reco
@@ -757,6 +857,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
         //Skip all non gen HSCP from event
         if (TMath::Abs(iGenParticle.PDG)!=17) continue;
         for( const auto &iRecoParticle : events[recoKey_Q][iGenEvents.first] ){
+          if( !isMatch(iGenParticle,iRecoParticle) ) continue;
           currBetaDist->Fill(iGenParticle.Beta,iRecoParticle.Beta);
         }//reco
       }//gen
@@ -879,8 +980,11 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
   
   vector<string> Names;
   vector<TCanvas*> outCorrCanvs, outUncorrCanvs;
+  vector<TCanvas*> outCorrCanvs2, outUncorrCanvs2;
   vector<TH1F*> outCorrDists, outUncorrDists;
+  vector<TH2F*> outCorrHistos, outUncorrHistos;
   TH1F *currCorrDist, *currUncorrDist;
+  TH2F *currCorrHisto, *currUncorrHisto;
 
   const int MASS = 300;
   const int CHARGE = 3;
@@ -915,11 +1019,15 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
       if (events.count(genKey) == 0 || events[recoKey].size() < 200){
         continue;
       }    
-      string corrName = fmt::format("MrDivMg_Q_{}_M_{}Corr",iMass->first,iCharge->first);
-      string uncorrName = fmt::format("MrDivMg_Q_{}_M_{}Uncorr",iMass->first,iCharge->first);
+      string corrName = fmt::format("MrDivMg_Q_{}_M_{}_Corr",iMass->first,iCharge->first);
+      string corrName2 = fmt::format("MrVsMg_Q_{}_M_{}_Corr",iMass->first,iCharge->first);
+      string uncorrName = fmt::format("MrDivMg_Q_{}_M_{}_Uncorr",iMass->first,iCharge->first);
+      string uncorrName2 = fmt::format("MrVsMg_Q_{}_M_{}_Uncorr",iMass->first,iCharge->first);
       
-      currCorrDist = new TH1F(corrName.c_str(),corrName.c_str(),30,0,6);
-      currUncorrDist = new TH1F(uncorrName.c_str(),uncorrName.c_str(),30,0,6);
+      currCorrDist = new TH1F(corrName.c_str(),corrName.c_str(),20,0,6);
+      currCorrHisto = new TH2F(corrName2.c_str(),corrName2.c_str(),100,0,2500,100,0,2500);
+      currUncorrDist = new TH1F(uncorrName.c_str(),uncorrName.c_str(),20,0,6);
+      currUncorrHisto = new TH2F(uncorrName2.c_str(),uncorrName2.c_str(),100,0,2500,100,0,2500);
       
       for( const auto &iGenEvents : events[genKey] ){
         //Get the vector of all gen particles from this event
@@ -930,18 +1038,26 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
           if (TMath::Abs(iGenParticle.PDG)!=17) continue;
           //Now for each of these reco particles we want to compare the gen particles
           for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
-            currCorrDist->Fill( iRecoParticle.corrMass / iMass->first );
+            if ( !isMatch(iGenParticle,iRecoParticle) ) continue;
+            currCorrDist->Fill( iRecoParticle.corrMass / iGenParticle.corrMass );
+            currCorrHisto->Fill( iGenParticle.corrMass, iRecoParticle.corrMass );
             currUncorrDist->Fill( iRecoParticle.uncorrMass / iMass->first );
+            currUncorrHisto->Fill( iGenParticle.corrMass, iRecoParticle.uncorrMass );
           }//reco
         }//gen
       }//events
 
       outCorrDists.push_back(currCorrDist);
+      outCorrHistos.push_back(currCorrHisto);
       outUncorrDists.push_back(currUncorrDist);
+      outUncorrHistos.push_back(currUncorrHisto);
+      
       Names.push_back( fmt::format("M_{}_Q_{}",iMass->first,iCharge->first).c_str() );
       
       outCorrCanvs.push_back(new TCanvas(fmt::format("M_{}_Q_{}_MrDivMgCorr",iMass->first,iCharge->first).c_str(),"",2000,2000));
+      outCorrCanvs2.push_back(new TCanvas(fmt::format("M_{}_Q_{}_MrVsMgCorr",iMass->first,iCharge->first).c_str(),"",2000,2000));
       outUncorrCanvs.push_back(new TCanvas(fmt::format("M_{}_Q_{}_MrDivMgUncorr",iMass->first,iCharge->first).c_str(),"",2000,2000));
+      outUncorrCanvs2.push_back(new TCanvas(fmt::format("M_{}_Q_{}_MrVsMgUncorr",iMass->first,iCharge->first).c_str(),"",2000,2000));
 
       if( iCharge->first == CHARGE ){
         currCorrDist->SetLineColor(*iMColor);
@@ -976,30 +1092,58 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
 
   //Write the distributions to file. Should have as many corr dists as uncorr dists
   auto iCorrDists = outCorrDists.begin();
+  auto iCorrHistos = outCorrHistos.begin();
   auto iCorrCanvs = outCorrCanvs.begin();
+  auto iCorrCanvs2 = outCorrCanvs2.begin();
+  
   auto iUncorrDists = outUncorrDists.begin();
+  auto iUncorrHistos = outUncorrHistos.begin();
   auto iUncorrCanvs = outUncorrCanvs.begin();
+  auto iUncorrCanvs2 = outUncorrCanvs2.begin();
+  
   auto iNames = Names.begin();
 
+  //Write the individual distributions to the TFile, as well as the TH2s
   string fName;
-  for( ; iCorrDists != outCorrDists.end(); iCorrDists++, iUncorrDists++, iCorrCanvs++, iUncorrCanvs++, iNames++ ){
+  for( ; iCorrDists != outCorrDists.end(); iCorrDists++, iCorrHistos++, iUncorrDists++, iUncorrHistos++, iCorrCanvs++, iCorrCanvs2++, iUncorrCanvs++, iUncorrCanvs2++, iNames++ ){
     (*iCorrCanvs)->cd();
     (*iCorrDists)->Draw();
     (*iCorrDists)->GetXaxis()->SetTitle("m_{r}^{c}/m_{g}");
-    (*iCorrDists)->GetYaxis()->SetTitle("Events/0.2");
+    (*iCorrDists)->GetYaxis()->SetTitle("Events");
     (*iCorrDists)->SetTitle(iNames->c_str());
     outFile->cd();
-    fName = string("MrVsMg") + *iNames + fmt::format("CC_{}_CT_{}_",CC,CT) +string("Corr.pdf");
+    fName = string("MrDivMg_") + *iNames + fmt::format("_CC_{}_CT_{}_",CC,CT) +string("Corr.pdf");
     (*iCorrCanvs)->Write();
 
     (*iUncorrCanvs)->cd();
     (*iUncorrDists)->Draw();
     (*iUncorrDists)->GetXaxis()->SetTitle("m_{r}^{u}/m_{g}");
-    (*iUncorrDists)->GetYaxis()->SetTitle("Events/0.2");
+    (*iUncorrDists)->GetYaxis()->SetTitle("Events");
     (*iUncorrDists)->SetTitle(iNames->c_str());
     outFile->cd();
-    fName = string("MrVsMg") + *iNames + fmt::format("CC_{}_CT_{}_",CC,CT) + string("Uncorr.pdf");
+    fName = string("MrDivMg_") + *iNames + fmt::format("_CC_{}_CT_{}_",CC,CT) + string("Uncorr.pdf");
     (*iUncorrCanvs)->Write();
+
+    (*iCorrCanvs2)->cd();
+    (*iCorrHistos)->Draw("colz");
+    (*iCorrHistos)->GetXaxis()->SetTitle("m_{g}");
+    (*iCorrHistos)->GetXaxis()->SetTitle("m_{r}^{c}");
+    (*iCorrHistos)->SetTitle(iNames->c_str());
+    outFile->cd();
+    (*iCorrHistos)->Write();
+    fName = string("MrVsMg_") + *iNames + fmt::format("_CC_{}_CT_{}_",CC,CT) +string("Corr.pdf");
+    (*iCorrCanvs2)->Print(fName.c_str(),"pdf");
+    
+    (*iUncorrCanvs2)->cd();
+    (*iUncorrHistos)->Draw("colz");
+    (*iUncorrHistos)->GetXaxis()->SetTitle("m_{g}");
+    (*iUncorrHistos)->GetXaxis()->SetTitle("m_{r}^{c}");
+    (*iUncorrHistos)->SetTitle(iNames->c_str());
+    outFile->cd();
+    (*iUncorrHistos)->Write();
+    fName = string("MrVsMg_") + *iNames + fmt::format("_CC_{}_CT_{}_",CC,CT) +string("Uncorr.pdf");
+    (*iUncorrCanvs2)->Print(fName.c_str(),"pdf");
+    
   }
 
   //Now write the stacks
@@ -1007,7 +1151,7 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
   corrMassScanStack->Draw();
   gPad->Update();
   corrMassScanStack->GetXaxis()->SetTitle("m_{r}^{c}/m_{g}");
-  corrMassScanStack->GetYaxis()->SetTitle("Events/0.2");
+  corrMassScanStack->GetYaxis()->SetTitle("Events");
   corrMassScanStack->SetTitle("Corrected Mass");
   gPad->Update();
   corrMassScanLegend->Draw("SAME");
@@ -1020,7 +1164,7 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
   uncorrMassScanStack->Draw();
   gPad->Update();
   uncorrMassScanStack->GetXaxis()->SetTitle("m_{r}^{u}/m_{g}");
-  uncorrMassScanStack->GetYaxis()->SetTitle("Events/0.2");
+  uncorrMassScanStack->GetYaxis()->SetTitle("Events");
   uncorrMassScanStack->SetTitle("Uncorrected Mass");
   gPad->Update();
   uncorrMassScanLegend->Draw("SAME");
@@ -1029,7 +1173,6 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
   outFile->cd();
   uncorrMassScanCanv->Print(fName.c_str(),"pdf");
 
-  
   corrChargeScanCanv->cd();
   corrChargeScanStack->Draw();
   gPad->Update();
@@ -1056,7 +1199,8 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
   outFile->cd();
   uncorrChargeScanCanv->Print(fName.c_str(),"pdf");
   
-}//Function
+  
+}
 
 void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<double,int> &massCounts, const Events &events, const char &CC, const char &CT){
   const Int_t NRGBs = 5;
@@ -1113,9 +1257,7 @@ void WriteBgenVsEtagen(TFile *&outFile, const distMap &distList, const map<doubl
     ++iColor;
   }//file loop
 
-
-
-  
+ 
   auto iDists = outDists.begin();
   auto iCanvases = outCanvases.begin();
   auto iMassName = massNames.begin();
@@ -1202,7 +1344,7 @@ int main(int argc, char **argv){
   
   //Right now, sets the same limits and bins for both reco and gen particles.
   map<string,distProp> distProps = {
-    {"beta",{limits(0,1.5),25,axes("#beta","events/{}")}},
+    {"beta",{limits(0,1.5),50,axes("#beta","events/{}")}},
     {"energy",{limits(0,2000),200,axes("E [GeV]","events/{} GeV")}},
     {"eta",{limits(-5,5),50,axes("#eta", "events/{}")}},
     {"gamma",{limits(0,100.0),200,axes("#gamma", "events/{}")}},
@@ -1308,8 +1450,7 @@ int main(int argc, char **argv){
         tree->SetBranchAddress("PDG",&PDG);
       }
 
-      vector<Particle> partVec;
-      
+        
       for(int iEvt = 0; iEvt < tree->GetEntries(); iEvt++){
         tree->GetEntry(iEvt);
         if(isGen){
@@ -1329,17 +1470,19 @@ int main(int argc, char **argv){
           phi = (float)reco_phi;
         }
 
+        //We only want the HSCPs for gen. So continue the loop if we do not have one.
+        if(isGen)
+          if(TMath::Abs(PDG) != 17) continue;
+                
         //Calculate theta
         theta = 2*TMath::ATan( TMath::Exp( -1 * (eta) ) );
         thetaDeg = theta * (180.0/TMath::Pi());
-
 
         //Fill the theta distribution
         Key thetaKey (string("theta"), type, (int)(3* *charge), (int)*mass);
         distList[thetaKey].distribution->Fill(thetaDeg);
         distList.find(thetaKey)->second.data.push_back(thetaDeg);
-        
-        
+                
         //fill the eta distribution
         Key etaKey (string("eta"), type, (int)(3* *charge), (int)*mass);
         distList[etaKey].distribution->Fill((eta));
@@ -1386,7 +1529,6 @@ int main(int argc, char **argv){
           distList.find(PtKey)->second.data.push_back( Pt );
         }
         
-    
         //Calculate the relativistic energy
         //Calculate it correctly (known Q) for HSCP each time.
         //No separate variable for incorrect E needed.
@@ -1396,7 +1538,7 @@ int main(int argc, char **argv){
           E = TMath::Sqrt( (*charge)*(*charge)*P*P + TMath::Power((float)*mass,2) );
         }
         else{
-          E = TMath::Sqrt( P*P + TMath::Power((float)*mass,2) );
+          E = TMath::Sqrt( (P*P) + ((Mass) * (Mass)) );
         }
         distList[enKey].distribution->Fill(E);
         distList.find(enKey)->second.data.push_back(E);
@@ -1459,7 +1601,6 @@ int main(int argc, char **argv){
         distList.find(betaKey)->second.data.push_back(beta);
         
         //Create a particle to contain the information.
-        //Pt(0),P(0),Theta(0),Eta(0),Phi(0),E(0),Ih(0),Mass(0),Event(-1),PDG(-999) {}
         Key particleKey (string("particle"), type, (int)(3* *charge), (int)*mass);
         
         //Note: here, P and Pt are NOT corrected for the reco particles, so we're okay.
@@ -1492,7 +1633,7 @@ int main(int argc, char **argv){
   WriteGenFracTrackVsBeta(outFile, distList, massCounts, distProps, CC, CT);
 
   // //Create Ih vs P Distribution for gen, reco,
-  WriteIhVsP( outFile, distList, chargeCounts, CC, CT);
+  WriteIhVsP( outFile, distList, chargeCounts, events, CC, CT);
 
   // //Create the PReco/Q vs PGen plot
   WritePrecoVsPgen( outFile, distList, chargeCounts, events, CC, CT);
