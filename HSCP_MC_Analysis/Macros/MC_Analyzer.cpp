@@ -124,24 +124,6 @@ struct Particle{
   
 };
 
-
-// struct Match{
-//   Particle *genParticle;
-//   Particle *recoParticle;
-//   float dR, dEta, dPhi;
-//   int event;
-
-//   Match() : genParticle(NULL), recoParticle(NULL), dR(-1), dEta(-1), dPhi(-1) {}
-//   Match( const Particle &aGen, const Particle &aReco, const float &a_dR, const float &a_dEta, const float &a_dPhi, const int &a_event ){
-//     genParticle = &aGen;
-//     recoParticle = &aReco;
-//     dR = a_dR;
-//     dEta = a_dEta;
-//     dPhi = a_dPhi;
-//     event = a_event;
-//   }
-// };
-
 bool isMatch( const Particle &aPart1, const Particle &aPart2 ){
   //Refine this later when you look at the distributions for dR
   const float LIMIT = 0.1;
@@ -1129,8 +1111,8 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
 
     (*iCorrCanvs2)->cd();
     (*iCorrHistos)->Draw("colz");
-    (*iCorrHistos)->GetYaxis()->SetTitle("m_{g} [MeV/c^{2}]");
-    (*iCorrHistos)->GetXaxis()->SetTitle("m_{r}^{c} [MeV/c^{2}]");
+    (*iCorrHistos)->GetXaxis()->SetTitle("m_{g} [MeV/c^{2}]");
+    (*iCorrHistos)->GetYaxis()->SetTitle("m_{r}^{c} [MeV/c^{2}]");
     (*iCorrHistos)->SetTitle(iNames->c_str());
     outFile->cd();
     (*iCorrHistos)->Write();
@@ -1139,8 +1121,8 @@ void WriteMrecoVsMgen(TFile *&outFile, const distMap &distList, const map<double
     
     (*iUncorrCanvs2)->cd();
     (*iUncorrHistos)->Draw("colz");
-    (*iUncorrHistos)->GetYaxis()->SetTitle("m_{g} [MeV/c^{2}]");
-    (*iUncorrHistos)->GetXaxis()->SetTitle("m_{r}^{u} [MeV/c^{2}]");
+    (*iUncorrHistos)->GetXaxis()->SetTitle("m_{g} [MeV/c^{2}]");
+    (*iUncorrHistos)->GetYaxis()->SetTitle("m_{r}^{u} [MeV/c^{2}]");
     (*iUncorrHistos)->SetTitle(iNames->c_str());
     outFile->cd();
     (*iUncorrHistos)->Write();
@@ -1694,8 +1676,6 @@ int main(int argc, char **argv){
           Key uncorrMassKey (string("recoMassUncorr"), type, (int)(3* *charge), (int)*mass);
           recoMassCorr = (*charge) * P * TMath::Sqrt( (Ih - 2.557) / 2.579 );
           recoMassUncorr = P * TMath::Sqrt( (Ih - 2.557) / 2.579 );
-          //recoMassCorr = Mass * (*charge);
-          //recoMassUncorr = Mass;
           
           distList[corrMassKey].distribution->Fill( recoMassCorr );
           distList.find(corrMassKey)->second.data.push_back( recoMassCorr );
