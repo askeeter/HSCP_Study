@@ -126,7 +126,7 @@ struct Particle{
 
 bool isMatch( const Particle &aPart1, const Particle &aPart2 ){
   //Refine this later when you look at the distributions for dR
-  const float LIMIT = 0.1;
+  const float LIMIT = 0.003;
 
   float dR = TMath::Sqrt(TMath::Power(aPart1.Eta-aPart2.Eta,2) + TMath::Power(aPart1.Phi-aPart2.Phi,2));
   if (dR <= LIMIT) return true;
@@ -513,7 +513,7 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
   TMultiGraph *recoOutGraph_UnknownQ = new TMultiGraph("multrecounknownq","");
   TMultiGraph *genOutGraph = new TMultiGraph("multgen","");
   
-  TGraph* currGraph;
+  TGraph *genGraph, *unknownQGraph, *knownQGraph;
   TLegend *recoDistLegend_KnownQ = new TLegend(0.5,0.55,0.80,0.85);
   TLegend *recoDistLegend_UnknownQ = new TLegend(0.5,0.55,0.80,0.85);
   TLegend *genDistLegend = new TLegend(0.5,0.55,0.80,0.85);
@@ -547,61 +547,27 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
     }    
    
     chargeNames.push_back(fmt::format("Q={}",iCharge->first)+string("#frac{e}{3}"));
-
-    /*--------------------------------------------------------------------*/
-    //Fill the reco graph, known Q
-    currGraph = new TGraph(distList.find(corr_pKey)->second.data.size());
-    currGraph->SetMarkerStyle(20);
-    currGraph->SetMarkerColorAlpha(*iColor,0.8);
-    currGraph->SetMarkerSize(0.3);
-    
-    //Now we want to loop through all momenta and Ih for this charge and mass
-    //Have the data stored in distList
-    auto iP = distList.find(corr_pKey)->second.data.begin();
-    auto iIh = distList.find(reco_ihKey)->second.data.begin();
-    unsigned int i = 0;
-    //Correcting momentum here. Assuming correct charge isknown
-    //Therefore need to multiply reco by Q in order to get corrected
-    for( ; iP != distList.find(corr_pKey)->second.data.end(); ++iP, ++iIh ){
-      currGraph->SetPoint(i,(*iP) * (iCharge->first/3.0),*iIh);
-      ++i;
-    }
-    recoOutGraph_KnownQ->Add(currGraph);
-    recoDistLegend_KnownQ->AddEntry(currGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
-    /*--------------------------------------------------------------------*/
-
-    /*--------------------------------------------------------------------*/
-    //Fill the reco graph, unknown Q
-    currGraph = new TGraph(distList.find(uncorr_pKey)->second.data.size());
-    currGraph->SetMarkerStyle(20);
-    currGraph->SetMarkerColorAlpha(*iColor,0.8);
-    currGraph->SetMarkerSize(0.3);
-    
-    //Now we want to loop through all momenta and Ih for this charge and mass
-    //Have the data stored in distList
-    iP = distList.find(uncorr_pKey)->second.data.begin();
-    iIh = distList.find(reco_ihKey)->second.data.begin();
-    i = 0;
-    //Correcting momentum here. Assuming correct charge isknown
-    //Therefore need to multiply reco by Q in order to get corrected
-    for( ; iP != distList.find(uncorr_pKey)->second.data.end(); ++iP, ++iIh ){
-      currGraph->SetPoint(i,(*iP),*iIh);
-      ++i;
-    }
-    recoOutGraph_UnknownQ->Add(currGraph);
-    recoDistLegend_UnknownQ->AddEntry(currGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
-    /*--------------------------------------------------------------------*/
     
     /*--------------------------------------------------------------------*/
     //Now we can compare the above two to the version below, where we use gen (absolutely correct) P, and the matched reco Ih.
     //Will have as many points as we do reco ihs.
-    currGraph = new TGraph(distList.find(reco_ihKey)->second.data.size());
-    currGraph->SetMarkerStyle(20);
-    currGraph->SetMarkerColorAlpha(*iColor,0.8);
-    currGraph->SetMarkerSize(0.3);
+    knownQGraph = new TGraph(distList.find(corr_pKey)->second.data.size());
+    knownQGraph->SetMarkerStyle(20);
+    knownQGraph->SetMarkerColorAlpha(*iColor,0.8);
+    knownQGraph->SetMarkerSize(0.3);
+
+    unknownQGraph = new TGraph(distList.find(uncorr_pKey)->second.data.size());
+    unknownQGraph->SetMarkerStyle(20);
+    unknownQGraph->SetMarkerColorAlpha(*iColor,0.8);
+    unknownQGraph->SetMarkerSize(0.3);
+    
+    genGraph = new TGraph(distList.find(reco_ihKey)->second.data.size());
+    genGraph->SetMarkerStyle(20);
+    genGraph->SetMarkerColorAlpha(*iColor,0.8);
+    genGraph->SetMarkerSize(0.3);
     Key recoKey (string("particle"), "Reco", (int)(iCharge->first), MASS);
     Key genKey (string("particle"), "Gen", (int)(iCharge->first), MASS);
-    i=0;
+    unsigned int i=0;
     //Need to loop the gen and reco particles, looking for matches
     for( const auto &iGenEvents : events[genKey] ){
       //Get the vector of all gen particles from this event
@@ -613,13 +579,24 @@ void WriteIhVsP(TFile *&outFile, const distMap &distList, const map<double,int> 
         for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
           //Only fill the dist if we have a match between the particles
           if (!isMatch(iGenParticle,iRecoParticle)) continue;
-          currGraph->SetPoint(i,iGenParticle.P,iRecoParticle.Ih);
+          genGraph->SetPoint(i,iGenParticle.P,iRecoParticle.Ih);
+          //Reco P uncorrected innately
+          knownQGraph->SetPoint(i,iRecoParticle.P*(iCharge->first/3),iRecoParticle.Ih);
+          unknownQGraph->SetPoint(i,iRecoParticle.P,iRecoParticle.Ih);
           i++;
         }//reco
       }//gen
     }//events
-    genOutGraph->Add(currGraph);
-    genDistLegend->AddEntry(currGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
+
+    recoOutGraph_KnownQ->Add(knownQGraph);
+    recoDistLegend_KnownQ->AddEntry(knownQGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
+
+    recoOutGraph_UnknownQ->Add(unknownQGraph);
+    recoDistLegend_UnknownQ->AddEntry(unknownQGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
+    
+    genOutGraph->Add(genGraph);
+    genDistLegend->AddEntry(genGraph, (fmt::format("Q: {} M: {}",iCharge->first,MASS)+string(" GeV/c^{2}")).c_str(), "P");
+    
     /*--------------------------------------------------------------------*/
     
     ++iColor;    
@@ -725,8 +702,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
         if (TMath::Abs(iGenParticle.PDG)!=17) continue;
         for( const auto &iRecoParticle : events[recoKey][iGenEvents.first] ){
           if( !isMatch(iGenParticle,iRecoParticle) ) continue;
-          currDist->Fill(iGenParticle.Pt,iRecoParticle.Pt);
-          currDistScaled->Fill(iGenParticle.Pt,(iCharge->first/3.0)*iRecoParticle.Pt);
+          currDist->Fill(iGenParticle.P,iRecoParticle.P);
+          currDistScaled->Fill(iGenParticle.P,(iCharge->first/3.0)*iRecoParticle.P);
         }//reco
       }//gen
     }//events
@@ -741,8 +718,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
   TCanvas *outCanvasScaled = new TCanvas("PoutcanvS","PoutcanvS",2000,2000);
   outCanvas->cd();
   outDist->Draw("BOX1");
-  outDist->GetXaxis()->SetTitle("P_{t}^{g} [GeV/c]");
-  outDist->GetYaxis()->SetTitle("P_{t}^{r} [GeV/c]");
+  outDist->GetXaxis()->SetTitle("P_{g} [GeV/c]");
+  outDist->GetYaxis()->SetTitle("P_{r} [GeV/c]");
   outDist->GetYaxis()->SetTitleOffset(1.4);
   outDist->GetXaxis()->SetRangeUser(0,2000);
   outDist->GetYaxis()->SetRangeUser(0,2000);
@@ -765,8 +742,8 @@ void WritePrecoVsPgen(TFile *&outFile, const distMap &distList, const map<double
 
   outCanvasScaled->cd();
   outDistScaled->Draw("BOX1");
-  outDistScaled->GetXaxis()->SetTitle("P_{t}^{g} [GeV/c]");
-  outDistScaled->GetYaxis()->SetTitle("Q #times P_{t}^{r} [GeV/c]");
+  outDistScaled->GetXaxis()->SetTitle("P_{g} [GeV/c]");
+  outDistScaled->GetYaxis()->SetTitle("Q #times P_{r} [GeV/c]");
   outDistScaled->GetYaxis()->SetTitleOffset(1.4);
   outDistScaled->GetXaxis()->SetRangeUser(0,2000);
   outDistScaled->GetYaxis()->SetRangeUser(0,2000);
@@ -879,6 +856,7 @@ void WriteBrecoVsBgen(TFile *&outFile, const distMap &distList, const map<double
         //Skip all non gen HSCP from event
         if (TMath::Abs(iGenParticle.PDG)!=17) continue;
         for( const auto &iRecoParticle : events[recoKey_M][iGenEvents.first] ){
+          if( !isMatch(iGenParticle,iRecoParticle) ) continue;
           currBetaDist->Fill(iGenParticle.Beta,iRecoParticle.Beta);
         }//reco
       }//gen
@@ -1468,7 +1446,7 @@ int main(int argc, char **argv){
     {"energy",{limits(0,2000),200,axes("E [GeV]","events/{} GeV")}},
     {"eta",{limits(-5,5),50,axes("#eta", "events/{}")}},
     {"gamma",{limits(0,100.0),200,axes("#gamma", "events/{}")}},
-    {"Ih",{limits(0,50),25,axes("I_{h} [MeV/cm]", "events/{} MeV/cm")}},
+    {"Ih",{limits(0,2600),25,axes("I_{h} [MeV/cm]", "events/{} MeV/cm")}},
     {"genP",{limits(0,2600),200,axes("P [GeV/c]", "events/{} GeV/c")}},
     {"genPt",{limits(0,2600),200,axes("P#_t [GeV/c]", "events/{} GeV/c")}},
     {"recoPCorr",{limits(0,2600),200,axes("P [GeV/c]", "events/{} GeV/c")}},
@@ -1668,27 +1646,6 @@ int main(int argc, char **argv){
         distList[ihKey].distribution->Fill( Ih );
         distList.find(ihKey)->second.data.push_back(Ih);
        
-        //Fill the mass distribution
-        //If we have a gen particle, fill with the known mass.
-        //If we have a reco particle, use the formula that relies on Ih
-        if( !isGen ){
-          Key corrMassKey (string("recoMassCorr"), type, (int)(3* *charge), (int)*mass);
-          Key uncorrMassKey (string("recoMassUncorr"), type, (int)(3* *charge), (int)*mass);
-          recoMassCorr = (*charge) * P * TMath::Sqrt( (Ih - 2.557) / 2.579 );
-          recoMassUncorr = P * TMath::Sqrt( (Ih - 2.557) / 2.579 );
-          
-          distList[corrMassKey].distribution->Fill( recoMassCorr );
-          distList.find(corrMassKey)->second.data.push_back( recoMassCorr );
-
-          distList[uncorrMassKey].distribution->Fill( recoMassUncorr );
-          distList.find(uncorrMassKey)->second.data.push_back( recoMassUncorr );
-        }
-        else{
-          Key MassKey (string("genMass"), type, (int)(3* *charge), (int)*mass);
-          distList[MassKey].distribution->Fill(Mass);
-          distList.find(MassKey)->second.data.push_back(Mass);
-        }
-        
         //Fill TOF distribution
         Key tofKey (string("TOF"), type, (int)(3* *charge), (int)*mass);
         //If we have a gen particle, we estimate TOF by 1/B.
@@ -1708,6 +1665,28 @@ int main(int argc, char **argv){
         //Calculate gamma
         gamma = 1.0 / TMath::Sqrt( 1 - beta*beta );
 
+
+        //Fill the mass distribution
+        //If we have a gen particle, fill with the known mass.
+        //If we have a reco particle, use the formula that relies on Ih
+        if( !isGen ){
+          Key corrMassKey (string("recoMassCorr"), type, (int)(3* *charge), (int)*mass);
+          Key uncorrMassKey (string("recoMassUncorr"), type, (int)(3* *charge), (int)*mass);
+          recoMassCorr = (*charge) * P * TMath::Sqrt( (Ih - 2.772) / 2.529 );
+          recoMassUncorr = P * TMath::Sqrt( (Ih - 2.772) / 2.529 );
+          
+          distList[corrMassKey].distribution->Fill( recoMassCorr );
+          distList.find(corrMassKey)->second.data.push_back( recoMassCorr );
+
+          distList[uncorrMassKey].distribution->Fill( recoMassUncorr );
+          distList.find(uncorrMassKey)->second.data.push_back( recoMassUncorr );
+        }
+        else{
+          Key MassKey (string("genMass"), type, (int)(3* *charge), (int)*mass);
+          distList[MassKey].distribution->Fill( P / (beta * gamma) );
+          distList.find(MassKey)->second.data.push_back(Mass);
+        }
+        
         //Fill the gamma distribution
         Key gammaKey (string("gamma"), type, (int)(3* *charge), (int)*mass);
         distList[gammaKey].distribution->Fill(gamma);

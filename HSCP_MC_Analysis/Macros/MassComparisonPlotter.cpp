@@ -124,24 +124,6 @@ struct Particle{
   
 };
 
-
-// struct Match{
-//   Particle *genParticle;
-//   Particle *recoParticle;
-//   float dR, dEta, dPhi;
-//   int event;
-
-//   Match() : genParticle(NULL), recoParticle(NULL), dR(-1), dEta(-1), dPhi(-1) {}
-//   Match( const Particle &aGen, const Particle &aReco, const float &a_dR, const float &a_dEta, const float &a_dPhi, const int &a_event ){
-//     genParticle = &aGen;
-//     recoParticle = &aReco;
-//     dR = a_dR;
-//     dEta = a_dEta;
-//     dPhi = a_dPhi;
-//     event = a_event;
-//   }
-// };
-
 bool isMatch( const Particle &aPart1, const Particle &aPart2 ){
   //Refine this later when you look at the distributions for dR
   const float LIMIT = 0.1;
@@ -1529,11 +1511,11 @@ int main(int argc, char **argv){
         currLegend->AddEntry(type,fmt::format("CC_{}_CT_{}",CC[iType],CT[iType]).c_str(),"L");
         iType++;
       }
+      iType=0;
       outStacks.push_back(currStack);
       outLegends.push_back(currLegend);
       outCanvs.push_back((new TCanvas(fmt::format("Q_{}_M_{}",iCharge.first,iMass.first).c_str(),fmt::format("Q_{}_M_{}",iCharge.first,iMass.first).c_str(),500,500)));
       outNames.push_back(fmt::format("MassComparison_Q_{}_M_{}.pdf",iCharge.first,iMass.first));
-      iType = 0;
     }//charge
   }//mass
 
@@ -1544,6 +1526,9 @@ int main(int argc, char **argv){
   for(; iStacks!=outStacks.end(); iStacks++, iLegends++, iCanvs++, iNames++){
     (*iCanvs)->cd();
     (*iStacks)->Draw();
+    (*iStacks)->GetXaxis()->SetTitle("Reco Mass [GeV/c^{2}]");
+    (*iStacks)->GetYaxis()->SetTitle("Number of Matched Tracks");
+    (*iStacks)->SetTitle((*iNames).c_str());
     (*iLegends)->Draw();
     (*iCanvs)->Print((*iNames).c_str(),"pdf");
   }
