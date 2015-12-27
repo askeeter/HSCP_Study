@@ -14,53 +14,17 @@
 #+LaTeX_HEADER: \lstset{tabsize=4,language=bash,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 
 * TODO Things to do [12/13]                                          :export:
-  - [X] Remove Pt cut limit on Analysis_Global.h
-  - [-] Re-run Step 1 for the different combos of CC and CT
-    - [-] CC F CT F
-    - [-] CC T CT T
-    - [-] CC T CT F
-    - [-] CC F CT T      
-  - [X] Update macro to take command line argument for Cluster
-    Cleaning and Cross-Talk Inversion parameters
-  - [X] Update anything that prints or saves to include CC and CT [8/8]
-    designations.
-    - [X] ListOfFiles function to change to the appropriate directory
-    - [X] Appropriate root file name to WriteStandardDistributions
-    - [X] WriteGenFracTrackVsBeta
-    - [X] WriteIhVsP
-    - [X] WritePrecoVsPgen
-    - [X] WriteBrecoVsBgen
-    - [X] WriteBgenVsEtagen      
-    - [X] Update the output ROOT file to include a CC and CT designation
-  - [X] Plot Ih Vs P for Reco particles [2/2]
-    - [X] Assuming correct charge
-    - [X] Not assuming correct charge (Correct P by multiplying by Q)
-  - [X] Add to primitive distributions
-    - [X] recoMassCorr
-    - [X] recoMassUncorr
-    - [X] genMass
-    - [X] recoPCorr / recoPtCorr
-    - [X] recoPUncorr / recoPtUncorr
-    - [X] genP / Pt
-  - [X] Update AllocateDistributions function to exclude respective
-    gen/reco variables for reco/gen distributions, respectively
-  - [X] Plot reco mass distributions [2/2]
-    - [X] With knowing correct charge
-    - [X] Without knowing correct charge
-  - [X] Plot reco mass vs gen mass [2/2] (Take ratio Mr/Mg dists for
-    known and unknown)
-    - [X] With knowing correct charge
-    - [X] Without knowing correct charge
-  - [X] Plot TOF for gen particles
-  - [X] Plot Beta for gen and reco particles [2/2]
-    - [X] 1/TOF for reco particles
-    - [X] PC/E for gen particles
-  - [X] Plot Beta reco vs beta gen (1/TOF reco) (PC/E gen) [2/2]
-    - [X] Mass scan for a fixed charge
-    - [X] Charge scan for a fixed mass
-  - [X] Fix how mass is calculated. Different for gen and reco. Gen
-    just use known.
-
+  [-] Write a script to automate the creation of the generator txt files. They can be located in the Configuration/Generator/data/      folder and resemble the following: "particles_HIP%d_%s_%d_GeV.txt" %(CHARGE(e/3),FLAVOR(stau in our case),MASS(GeV))
+    [-] Create arrays of all desired charges (e/3) and masses
+    [-] Loop through each combination of these. For each combination, insert the necessary charge and mass into a cat> blah.txt<<EOF as usual. Use one of the existings as your starting point, of course.
+  [-] Write a script to automate the creation of the generator tbl files. They can be found in the Configuration/Generator/data folder and resemble the following: "hscppythiapdtHIP%d%s%d.tbl" %(CHARGE,FLAVOR,MASS)
+    [-] Same as above for the creation
+  [-] Write a script to automate the creation of the generator cff files. They can be located in the Configuration/GenProduction/python/ThirteenTeV folder and resemble the following: "HSCPmchamp%d_M_%d_TuneZ2star_13TeV_pythia6_cff.py" %(CHARGE,MASS)
+  [-] After completing all of the above, we need to compile the python files by running the SCRAM command from the analysis page.
+  [-] Re generate all AOD files. Use the 2nw queue for this, as they will take a while. Shoot for 5000 events per charge and mass combination. While these are running, attempt to run the analysis steps all the way through based on Loic's AnalysisSamples.txt file. Possibly remove everything that is not background and data. 
+  [-] Attempt to read the data tuples into your analysis macro. Incorporate the data into your existing plots. Especially the IhVsP plots.
+  
+  
 * HSCP Analysis                                                      :export:
 ** File Generation
 NOTE: The Pt cut for the pre-selection can be changed in
