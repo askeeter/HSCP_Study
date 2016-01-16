@@ -13,17 +13,23 @@
 #+LaTeX_HEADER: \lstset{tabsize=4,language=sh,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 #+LaTeX_HEADER: \lstset{tabsize=4,language=bash,captionpos=b,frame=lines,numbers=left,numberstyle=\tiny,numbersep=5pt,breaklines = true,showstringspaces=false,basicstyle=\footnotesize,keywordstyle=\color{blue},commentstyle=\color{red},stringstyle=\color{green}}
 
-* TODO Things to do [12/13]                                          :export:
-  [-] Write a script to automate the creation of the generator txt files. They can be located in the Configuration/Generator/data/      folder and resemble the following: "particles_HIP%d_%s_%d_GeV.txt" %(CHARGE(e/3),FLAVOR(stau in our case),MASS(GeV))
-    [-] Create arrays of all desired charges (e/3) and masses
-    [-] Loop through each combination of these. For each combination, insert the necessary charge and mass into a cat> blah.txt<<EOF as usual. Use one of the existings as your starting point, of course.
-  [-] Write a script to automate the creation of the generator tbl files. They can be found in the Configuration/Generator/data folder and resemble the following: "hscppythiapdtHIP%d%s%d.tbl" %(CHARGE,FLAVOR,MASS)
-    [-] Same as above for the creation
-  [-] Write a script to automate the creation of the generator cff files. They can be located in the Configuration/GenProduction/python/ThirteenTeV folder and resemble the following: "HSCPmchamp%d_M_%d_TuneZ2star_13TeV_pythia6_cff.py" %(CHARGE,MASS)
-  [-] After completing all of the above, we need to compile the python files by running the SCRAM command from the analysis page.
-  [-] Re generate all AOD files. Use the 2nw queue for this, as they will take a while. Shoot for 5000 events per charge and mass combination. While these are running, attempt to run the analysis steps all the way through based on Loic's AnalysisSamples.txt file. Possibly remove everything that is not background and data. 
-  [-] Attempt to read the data tuples into your analysis macro. Incorporate the data into your existing plots. Especially the IhVsP plots.
-  
+* Things to do [5/8]                                                 :export:
+  - [X] Write a script to automate the creation of the generator txt
+    files. They can be located in the Configuration/Generator/data/
+    folder and resemble the following: 
+    "particles_HIP%d_%s_%d_GeV.txt" %(CHARGE(e/3),FLAVOR(stau in our case),MASS(GeV))
+    - [X] Create arrays of all desired charges (e/3) and masses
+    - [X] Loop through each combination of these. For each combination, insert the necessary charge and mass into a cat> blah.txt<<EOF as usual. Use one of the existings as your starting point, of course.
+  - [X] Write a script to automate the creation of the generator tbl files. They can be found in the Configuration/Generator/data folder and resemble the following: "hscppythiapdtHIP%d%s%d.tbl" %(CHARGE,FLAVOR,MASS)
+    - [X] Same as above for the creation
+  - [X] Write a script to automate the creation of the generator cff files. They can be located in the Configuration/GenProduction/python/ThirteenTeV folder and resemble the following: "HSCPmchamp%d_M_%d_TuneZ2star_13TeV_pythia6_cff.py" %(CHARGE,MASS)
+  - [X] Update current automation scripts to read all necessary files
+    from the respective directories that I have created in src
+  - [-] Recreate all cfg files
+  - [-] Re generate all AOD files. Use the 2nw queue for this, as they will take a while. Shoot for 5000 events per charge and mass combination. While these are running, attempt to run the analysis steps all the way through based on Loic's AnalysisSamples.txt file. Possibly remove everything that is not background and data. 
+  - [-] Attempt to read the data tuples into your analysis macro. Incorporate the data into your existing plots. Especially the IhVsP plots.
+  - [-] Update the lab notebook with information pertaining to the
+    creation of the generator fragments
   
 * HSCP Analysis                                                      :export:
 ** File Generation
